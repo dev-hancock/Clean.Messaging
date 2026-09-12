@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <Description>Optional Entity Framework Core domain-event capture for Clean.Messaging.Ddd.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Clean.Messaging.Ddd\Clean.Messaging.Ddd.csproj" />
+    <ProjectReference Include="..\Clean.Messaging.EntityFrameworkCore\Clean.Messaging.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\Clean.Messaging.Outbox\Clean.Messaging.Outbox.csproj" />
+    <ProjectReference Include="..\Clean.Messaging.Outbox.EntityFrameworkCore\Clean.Messaging.Outbox.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
+  </ItemGroup>
+</Project>
