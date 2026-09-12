@@ -18,14 +18,6 @@ internal sealed class MqttInboxRoute<TMessage>(
 
     public Func<MqttApplicationMessage, TMessage, Guid?>? CausationId { get; set; }
 
-    public bool Matches(
-        string topic)
-    {
-        return MqttTopicMatcher.IsMatch(
-            TopicFilter,
-            topic);
-    }
-
     public async ValueTask Accept(
         IServiceProvider services,
         MqttApplicationMessage message,
@@ -71,9 +63,21 @@ internal sealed class MqttInboxRoute<TMessage>(
     }
 }
 
-internal sealed class MqttInboxPoisonMessageException(
-    string topicFilter,
-    Exception innerException)
-    : Exception(
-        $"MQTT message could not be decoded for route '{topicFilter}'.",
-        innerException);
+internal sealed class MqttInboxPoisonMessageException
+    : Exception
+{
+    public MqttInboxPoisonMessageException(
+        string message)
+        : base(message)
+    {
+    }
+
+    public MqttInboxPoisonMessageException(
+        string message,
+        Exception innerException)
+        : base(
+            message,
+            innerException)
+    {
+    }
+}
