@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Options;
 
 namespace Clean.Messaging.Outbox.Mqtt;
 
@@ -28,9 +28,9 @@ internal sealed class MqttOutboxTargets(
             }
 
             yield return new OutboxTarget(
-                route.Id,
-                MqttTransport.Name,
-                destination);
+                TargetId: route.Id,
+                Transport: MqttTransport.Name,
+                Destination: destination);
         }
     }
 }

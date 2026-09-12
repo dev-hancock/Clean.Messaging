@@ -56,7 +56,7 @@ internal sealed partial class ClaimRenewal(
             RenewalFailed(
                 logger,
                 key.MessageId,
-                key.ConsumerId,
+                key.TargetId,
                 exception);
 
             await claimLost.CancelAsync();
@@ -65,10 +65,10 @@ internal sealed partial class ClaimRenewal(
 
     [LoggerMessage(
         Level = LogLevel.Warning,
-        Message = "Claim renewal failed for {MessageId}/{ConsumerId}.")]
+        Message = "Claim renewal failed for {MessageId}/{TargetId}.")]
     private static partial void RenewalFailed(
         ILogger logger,
         Guid messageId,
-        string consumerId,
+        string targetId,
         Exception exception);
 }

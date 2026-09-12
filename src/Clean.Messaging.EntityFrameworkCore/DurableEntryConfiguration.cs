@@ -16,10 +16,10 @@ internal static class DurableEntryConfiguration
         builder.HasKey(entry => new
         {
             entry.MessageId,
-            entry.ConsumerId
+            entry.TargetId
         });
 
-        builder.Property(entry => entry.ConsumerId)
+        builder.Property(entry => entry.TargetId)
             .HasMaxLength(200)
             .IsUnicode(false);
 
@@ -51,7 +51,7 @@ internal static class DurableEntryConfiguration
         builder.HasIndex(entry => new
         {
             entry.EventId,
-            entry.ConsumerId
+            entry.TargetId
         }).IsUnique();
 
         builder.HasIndex(entry => new

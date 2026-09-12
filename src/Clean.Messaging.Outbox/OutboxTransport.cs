@@ -24,7 +24,7 @@ internal sealed class OutboxTransport<TTransport>(
             new OutboxDispatch(
                 entry.MessageId,
                 entry.EventId,
-                entry.ConsumerId,
+                entry.TargetId,
                 entry.Destination,
                 entry.Message.Type,
                 Encoding.UTF8.GetBytes(

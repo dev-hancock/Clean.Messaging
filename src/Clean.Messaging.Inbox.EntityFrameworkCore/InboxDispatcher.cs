@@ -67,7 +67,7 @@ internal sealed class InboxDispatcher<TDbContext>(
         try
         {
             await dispatcher.Dispatch(
-                owned.Entry.ConsumerId,
+                owned.Entry.TargetId,
                 owned.Entry.Message,
                 cancellationToken);
 
@@ -110,7 +110,7 @@ internal sealed class InboxDispatcher<TDbContext>(
             .AnyAsync(
                 candidate =>
                     candidate.MessageId == entry.MessageId &&
-                    candidate.ConsumerId == entry.ConsumerId &&
+                    candidate.TargetId == entry.TargetId &&
                     candidate.ProcessedAt != null,
                 cancellationToken);
     }

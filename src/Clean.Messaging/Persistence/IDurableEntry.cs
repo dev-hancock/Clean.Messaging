@@ -10,7 +10,7 @@ public interface IDurableEntry
 
     Guid EventId { get; }
 
-    string ConsumerId { get; }
+    string TargetId { get; }
 
     MessageData Message { get; }
 

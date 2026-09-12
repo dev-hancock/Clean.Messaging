@@ -14,8 +14,8 @@ internal sealed class OutboxTargetProvider(
             .Get(messageType)
             .Select(consumer =>
                 new OutboxTarget(
-                    consumer.ConsumerId,
-                    LocalTransport.Name,
-                    null));
+                    TargetId: consumer.ConsumerId,
+                    Transport: LocalTransport.Name,
+                    Destination: null));
     }
 }

@@ -214,7 +214,7 @@ internal sealed partial class WorkLoop<TEntry>(
                 ProcessingFailed(
                     logger,
                     owned.Entry.MessageId,
-                    owned.Entry.ConsumerId,
+                    owned.Entry.TargetId,
                     exception);
             }
             finally
@@ -265,10 +265,10 @@ internal sealed partial class WorkLoop<TEntry>(
 
     [LoggerMessage(
         Level = LogLevel.Error,
-        Message = "Work processing failed for {MessageId}/{ConsumerId}; durable recovery will retry.")]
+        Message = "Work processing failed for {MessageId}/{TargetId}; durable recovery will retry.")]
     private static partial void ProcessingFailed(
         ILogger logger,
         Guid messageId,
-        string consumerId,
+        string targetId,
         Exception exception);
 }

@@ -82,13 +82,13 @@ internal sealed class OutboxCommitVerifier<TDbContext>(
             .Select(entry => new
             {
                 entry.MessageId,
-                entry.ConsumerId
+                entry.TargetId
             })
             .ToArray()
             .Select(entry =>
                 new EntryKey(
                     entry.MessageId,
-                    entry.ConsumerId))
+                    entry.TargetId))
             .ToHashSet();
 
         return keys.All(
@@ -113,7 +113,7 @@ internal sealed class OutboxCommitVerifier<TDbContext>(
             .Select(entry => new
             {
                 entry.MessageId,
-                entry.ConsumerId
+                entry.TargetId
             })
             .ToArrayAsync(cancellationToken);
 
@@ -121,7 +121,7 @@ internal sealed class OutboxCommitVerifier<TDbContext>(
             .Select(entry =>
                 new EntryKey(
                     entry.MessageId,
-                    entry.ConsumerId))
+                    entry.TargetId))
             .ToHashSet();
 
         return keys.All(

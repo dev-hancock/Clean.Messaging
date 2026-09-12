@@ -223,7 +223,7 @@ internal sealed class InboxStore<TDbContext>(
             .Set<InboxEntry>()
             .AsNoTracking()
             .Where(entry =>
-                entry.ConsumerId == consumerId &&
+                entry.TargetId == consumerId &&
                 eventIds.Contains(entry.EventId))
             .Select(entry =>
                 entry.EventId)
@@ -264,7 +264,7 @@ internal sealed class InboxStore<TDbContext>(
         {
             MessageId = admission.MessageId,
             EventId = admission.EventId,
-            ConsumerId = consumerId,
+            TargetId = consumerId,
             Message = admission.Message,
             CorrelationId = admission.CorrelationId,
             CausationId = admission.CausationId,

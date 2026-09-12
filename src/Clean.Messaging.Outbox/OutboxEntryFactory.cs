@@ -43,7 +43,7 @@ internal sealed class OutboxEntryFactory(
                 {
                     MessageId = messageId,
                     EventId = message.Id,
-                    ConsumerId = target.Id,
+                    TargetId = target.TargetId,
                     Transport = target.Transport,
                     Destination = target.Destination,
                     Message = payload,
@@ -68,21 +68,21 @@ internal sealed class OutboxEntryFactory(
     {
         foreach (var target in targets)
         {
-            ValidateId(target);
+            ValidateTargetId(target);
             ValidateTransport(target);
         }
 
         ValidateDuplicates(targets);
     }
 
-    private static void ValidateId(
+    private static void ValidateTargetId(
         OutboxTarget target)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(
-            target.Id);
+            target.TargetId);
 
-        if (target.Id.Length > 200 ||
-            target.Id.Any(character => character > 127))
+        if (target.TargetId.Length > 200 ||
+            target.TargetId.Any(character => character > 127))
         {
             throw new ArgumentException(
                 "Outbox target identities must be at most 200 ASCII characters.",
@@ -102,7 +102,7 @@ internal sealed class OutboxEntryFactory(
     {
         var duplicate = targets
             .GroupBy(
-                target => target.Id,
+                target => target.TargetId,
                 StringComparer.Ordinal)
             .FirstOrDefault(group =>
                 group.Skip(1).Any());

@@ -1,4 +1,4 @@
-﻿using Clean.Messaging.Persistence;
+using Clean.Messaging.Persistence;
 using Clean.Messaging.Processing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -71,7 +71,7 @@ internal sealed class LocalOutboxDelivery<TDbContext>(
         try
         {
             await dispatcher.Dispatch(
-                owned.Entry.ConsumerId,
+                owned.Entry.TargetId,
                 owned.Entry.Message,
                 cancellationToken);
 
@@ -115,7 +115,7 @@ internal sealed class LocalOutboxDelivery<TDbContext>(
             .AnyAsync(
                 candidate =>
                     candidate.MessageId == entry.MessageId &&
-                    candidate.ConsumerId == entry.ConsumerId &&
+                    candidate.TargetId == entry.TargetId &&
                     candidate.ProcessedAt != null,
                 cancellationToken);
     }

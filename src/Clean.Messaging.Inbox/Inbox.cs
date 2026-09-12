@@ -52,7 +52,7 @@ internal sealed class Inbox(
                 {
                     MessageId = message.Id,
                     EventId = eventId,
-                    ConsumerId = consumer.ConsumerId,
+                    TargetId = consumer.ConsumerId,
                     Message = data,
                     CorrelationId = message.CorrelationId,
                     CausationId = message.CausationId,

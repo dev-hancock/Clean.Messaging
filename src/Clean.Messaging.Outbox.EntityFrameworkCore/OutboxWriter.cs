@@ -27,12 +27,12 @@ internal sealed class OutboxWriter
             .Where(entry =>
                 entry.State != EntityState.Deleted &&
                 entry.Entity.EventId == batch.EventId)
-            .Select(entry => entry.Entity.ConsumerId)
+            .Select(entry => entry.Entity.TargetId)
             .ToHashSet(StringComparer.Ordinal);
 
         var missing = batch.Entries
             .Where(entry =>
-                !consumers.Contains(entry.ConsumerId))
+                !consumers.Contains(entry.TargetId))
             .ToArray();
 
         if (missing.Length == 0)

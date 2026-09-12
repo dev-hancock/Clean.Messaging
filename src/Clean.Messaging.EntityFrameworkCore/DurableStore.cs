@@ -187,7 +187,7 @@ internal abstract class DurableStore<TDbContext, TEntry>(
                 now)
             .OrderBy(entry => entry.CreatedAt)
             .ThenBy(entry => entry.MessageId)
-            .ThenBy(entry => entry.ConsumerId)
+            .ThenBy(entry => entry.TargetId)
             .Take(limit)
             .ExecuteUpdateAsync(
                 SetClaimed(
@@ -206,7 +206,7 @@ internal abstract class DurableStore<TDbContext, TEntry>(
             .AsNoTracking()
             .OrderBy(entry => entry.CreatedAt)
             .ThenBy(entry => entry.MessageId)
-            .ThenBy(entry => entry.ConsumerId)
+            .ThenBy(entry => entry.TargetId)
             .ToArrayAsync(cancellationToken);
 
         if (entries.Length != affected)
@@ -416,7 +416,7 @@ internal abstract class DurableStore<TDbContext, TEntry>(
     {
         return entry =>
             entry.MessageId == key.MessageId &&
-            entry.ConsumerId == key.ConsumerId;
+            entry.TargetId == key.TargetId;
     }
 
     private static Expression<Func<TEntry, bool>> Unresolved()

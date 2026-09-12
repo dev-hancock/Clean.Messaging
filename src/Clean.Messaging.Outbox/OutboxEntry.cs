@@ -11,7 +11,7 @@ public sealed class OutboxEntry : IDurableEntry
 
     public Guid EventId { get; init; }
 
-    public required string ConsumerId { get; init; }
+    public required string TargetId { get; init; }
 
     public required string Transport { get; init; }
 
@@ -53,5 +53,5 @@ public sealed class OutboxEntry : IDurableEntry
 
     public EntryKey Key => new(
         MessageId,
-        ConsumerId);
+        TargetId);
 }

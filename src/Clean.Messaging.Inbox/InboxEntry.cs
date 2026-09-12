@@ -11,7 +11,7 @@ internal sealed class InboxEntry : IDurableEntry
 
     public Guid EventId { get; init; }
 
-    public required string ConsumerId { get; init; }
+    public required string TargetId { get; init; }
 
     public required MessageData Message { get; init; }
 
@@ -47,5 +47,5 @@ internal sealed class InboxEntry : IDurableEntry
 
     public int? LastFailedAttempt { get; set; }
 
-    public EntryKey Key => new(MessageId, ConsumerId);
+    public EntryKey Key => new(MessageId, TargetId);
 }

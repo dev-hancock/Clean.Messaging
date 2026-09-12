@@ -28,7 +28,7 @@ internal sealed class DeadLetterStore<
             .Select(entry => new DeadLetter(
                 new EntryKey(
                     entry.MessageId,
-                    entry.ConsumerId),
+                    entry.TargetId),
                 entry.EventId,
                 entry.DeadLetteredAt!.Value,
                 entry.Attempts,
@@ -154,7 +154,7 @@ internal sealed class DeadLetterStore<
     {
         return entry =>
             entry.MessageId == key.MessageId &&
-            entry.ConsumerId == key.ConsumerId;
+            entry.TargetId == key.TargetId;
     }
 
     private static Action<UpdateSettersBuilder<TEntry>> SetRequeued()

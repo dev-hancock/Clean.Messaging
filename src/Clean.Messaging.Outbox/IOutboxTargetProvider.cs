@@ -1,7 +1,7 @@
 namespace Clean.Messaging.Outbox;
 
 public sealed record OutboxTarget(
-    string Id,
+    string TargetId,
     string Transport,
     string? Destination);
 

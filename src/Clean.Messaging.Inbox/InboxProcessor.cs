@@ -32,7 +32,7 @@ internal sealed partial class InboxProcessor(
             entry.MessageId,
             entry.CorrelationId,
             entry.CausationId,
-            entry.ConsumerId);
+            entry.TargetId);
 
         using var claimLost = new CancellationTokenSource();
 
@@ -203,7 +203,7 @@ internal sealed partial class InboxProcessor(
         RetryScheduled(
             logger,
             entry.MessageId,
-            entry.ConsumerId,
+            entry.TargetId,
             entry.Attempts,
             delay,
             exception);
@@ -236,7 +236,7 @@ internal sealed partial class InboxProcessor(
         EntryDeadLettered(
             logger,
             entry.MessageId,
-            entry.ConsumerId,
+            entry.TargetId,
             entry.Attempts,
             exception);
 
@@ -262,7 +262,7 @@ internal sealed partial class InboxProcessor(
         EntryCompleted(
             logger,
             entry.MessageId,
-            entry.ConsumerId,
+            entry.TargetId,
             entry.Attempts);
     }
 
@@ -273,7 +273,7 @@ internal sealed partial class InboxProcessor(
         EntryClaimLost(
             logger,
             entry.MessageId,
-            entry.ConsumerId);
+            entry.TargetId);
     }
 
     private static async Task StopRenewal(
@@ -290,39 +290,39 @@ internal sealed partial class InboxProcessor(
 
     [LoggerMessage(
         Level = LogLevel.Warning,
-        Message = "Inbox entry {MessageId}/{ConsumerId} failed on attempt {Attempt}; retry in {Delay}.")]
+        Message = "Inbox entry {MessageId}/{TargetId} failed on attempt {Attempt}; retry in {Delay}.")]
     private static partial void RetryScheduled(
         ILogger logger,
         Guid messageId,
-        string consumerId,
+        string targetId,
         int attempt,
         TimeSpan delay,
         Exception exception);
 
     [LoggerMessage(
         Level = LogLevel.Error,
-        Message = "Inbox entry {MessageId}/{ConsumerId} dead-lettered on attempt {Attempt}.")]
+        Message = "Inbox entry {MessageId}/{TargetId} dead-lettered on attempt {Attempt}.")]
     private static partial void EntryDeadLettered(
         ILogger logger,
         Guid messageId,
-        string consumerId,
+        string targetId,
         int attempt,
         Exception exception);
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "Inbox entry {MessageId}/{ConsumerId} completed on attempt {Attempt}.")]
+        Message = "Inbox entry {MessageId}/{TargetId} completed on attempt {Attempt}.")]
     private static partial void EntryCompleted(
         ILogger logger,
         Guid messageId,
-        string consumerId,
+        string targetId,
         int attempt);
 
     [LoggerMessage(
         Level = LogLevel.Warning,
-        Message = "Inbox entry {MessageId}/{ConsumerId} lost its claim.")]
+        Message = "Inbox entry {MessageId}/{TargetId} lost its claim.")]
     private static partial void EntryClaimLost(
         ILogger logger,
         Guid messageId,
-        string consumerId);
+        string targetId);
 }
