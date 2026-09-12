@@ -28,6 +28,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AF8D6B31-7D2
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Clean.Messaging.Outbox.Mqtt", "src\Clean.Messaging.Outbox.Mqtt\Clean.Messaging.Outbox.Mqtt.csproj", "{348DFB5C-FFED-456C-BC98-DB61874D58F5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Clean.Messaging.Inbox.Mqtt", "src\Clean.Messaging.Inbox.Mqtt\Clean.Messaging.Inbox.Mqtt.csproj", "{1879C2B9-0A23-480E-A7ED-3A1E51FBE360}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -82,6 +84,10 @@ Global
 		{348DFB5C-FFED-456C-BC98-DB61874D58F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{348DFB5C-FFED-456C-BC98-DB61874D58F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{348DFB5C-FFED-456C-BC98-DB61874D58F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1879C2B9-0A23-480E-A7ED-3A1E51FBE360}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1879C2B9-0A23-480E-A7ED-3A1E51FBE360}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1879C2B9-0A23-480E-A7ED-3A1E51FBE360}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1879C2B9-0A23-480E-A7ED-3A1E51FBE360}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -99,6 +105,7 @@ Global
 		{AC5C024F-EF8E-45EF-98D3-7F6B3649CBF8} = {AF8D6B31-7D21-4A98-A781-73A0CCBB578F}
 		{1947F9B5-CD8B-4365-A1F3-10A5E37949E3} = {AF8D6B31-7D21-4A98-A781-73A0CCBB578F}
 		{348DFB5C-FFED-456C-BC98-DB61874D58F5} = {AF8D6B31-7D21-4A98-A781-73A0CCBB578F}
+		{1879C2B9-0A23-480E-A7ED-3A1E51FBE360} = {AF8D6B31-7D21-4A98-A781-73A0CCBB578F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7388D026-3B56-4D27-BD83-BA264B2C61E6}
