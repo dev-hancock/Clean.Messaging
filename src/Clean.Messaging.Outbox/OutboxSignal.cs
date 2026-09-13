@@ -2,7 +2,7 @@ using Clean.Messaging.Processing;
 
 namespace Clean.Messaging.Outbox;
 
-internal sealed class OutboxSignal : IWorkSignal
+public sealed class OutboxSignal : IWorkSignal
 {
     private readonly AsyncAutoResetEvent _signal = new();
 

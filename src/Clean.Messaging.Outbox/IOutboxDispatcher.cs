@@ -2,7 +2,7 @@ using Clean.Messaging.Persistence;
 
 namespace Clean.Messaging.Outbox;
 
-internal interface IOutboxDispatcher
+public interface IOutboxDispatcher
 {
     ValueTask<bool> Dispatch(
         OwnedEntry<OutboxEntry> owned,

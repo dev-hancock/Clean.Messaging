@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Clean.Messaging.Processing;
 
-internal sealed partial class ClaimRenewal(
+public sealed partial class ClaimRenewal(
     TimeProvider time,
     ILogger<ClaimRenewal> logger)
 {

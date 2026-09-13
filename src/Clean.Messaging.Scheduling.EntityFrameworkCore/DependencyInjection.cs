@@ -24,6 +24,10 @@ public static class DependencyInjection
             ScheduledMessageStore<TDbContext>>();
 
         builder.Services.TryAddScoped<
+            IScheduledMessageReader,
+            ScheduledMessageStore<TDbContext>>();
+
+        builder.Services.TryAddScoped<
             IScheduledMessageExecutor,
             ScheduledMessageExecutor<TDbContext>>();
 

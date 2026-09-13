@@ -5,7 +5,7 @@ using Clean.Messaging.Serialization;
 
 namespace Clean.Messaging.Inbox;
 
-internal sealed class InboxEntry : IDurableEntry
+public sealed class InboxEntry : IDurableEntry
 {
     public Guid MessageId { get; init; }
 

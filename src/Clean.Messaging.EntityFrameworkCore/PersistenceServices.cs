@@ -8,7 +8,7 @@ namespace Clean.Messaging.EntityFrameworkCore;
 
 internal sealed record MessagingPersistence(Type DbContextType);
 
-internal static class PersistenceServices
+public static class PersistenceServices
 {
     public static void EnsurePersistence<TDbContext>(
         IServiceCollection services)

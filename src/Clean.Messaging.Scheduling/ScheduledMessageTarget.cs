@@ -1,6 +1,6 @@
 namespace Clean.Messaging.Scheduling;
 
-internal readonly record struct ScheduledMessageTarget // todo: rename to ScheduleTarget?
+public readonly record struct ScheduledMessageTarget // todo: rename to ScheduleTarget?
 {
     public static ScheduledMessageTarget Message { get; } = new("message");
 

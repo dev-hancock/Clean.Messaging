@@ -4,7 +4,8 @@ namespace Clean.Messaging.Scheduling.EntityFrameworkCore;
 
 internal sealed class ScheduledMessageStore<TDbContext>(
     TDbContext db)
-    : IScheduledMessageStore
+    : IScheduledMessageStore,
+      IScheduledMessageReader
     where TDbContext : DbContext
 {
     public void Add(
@@ -117,6 +118,33 @@ internal sealed class ScheduledMessageStore<TDbContext>(
             .OrderBy(message => message.DueAt)
             .ThenBy(message => message.Id)
             .ToArrayAsync(cancellationToken);
+    }
+
+    async ValueTask<IReadOnlyList<ScheduledMessageStatus>> IScheduledMessageReader.GetGroup(
+        ScheduleGroupId groupId,
+        ScheduledMessageTarget? target,
+        CancellationToken cancellationToken)
+    {
+        var messages = await GetGroup(
+            groupId,
+            target,
+            cancellationToken);
+
+        return messages
+            .Select(message => new ScheduledMessageStatus(
+                message.Id,
+                message.GroupId,
+                message.Target,
+                message.Message,
+                message.DueAt,
+                message.Attempts,
+                message.NextAttemptAt,
+                message.DispatchedAt,
+                message.CancelledAt,
+                message.FailedAt,
+                message.FailureCode,
+                message.FailureMessage))
+            .ToArray();
     }
 
     public async ValueTask<DateTime?> NextDue(

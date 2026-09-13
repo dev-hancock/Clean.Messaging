@@ -1,6 +1,6 @@
 namespace Clean.Messaging.Processing;
 
-internal sealed record WorkLoopOptions(
+public sealed record WorkLoopOptions(
     int Capacity,
     int Concurrency,
     int BatchSize,

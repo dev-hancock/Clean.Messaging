@@ -1,6 +1,6 @@
 namespace Clean.Messaging.Outbox;
 
-internal sealed class Outbox(
+public sealed class Outbox(
     OutboxEntryFactory entries,
     IOutboxStore store)
     : IOutbox

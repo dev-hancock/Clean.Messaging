@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace Clean.Messaging.Outbox;
 
-internal sealed partial class OutboxProcessor(
+public sealed partial class OutboxProcessor(
     IOutboxStore store,
     IOutboxDispatcher dispatcher,
     ClaimRenewal renewal,

@@ -12,7 +12,7 @@ internal sealed class OutboxScheduledMessageDelivery(
 {
     private delegate void Enqueue(
         IOutbox outbox,
-        ScheduledMessageEntry scheduled,
+        ScheduledMessageDispatch scheduled,
         object message);
 
     private static readonly ConcurrentDictionary<Type, Enqueue> Invokers = new();
@@ -21,11 +21,11 @@ internal sealed class OutboxScheduledMessageDelivery(
         ScheduledMessageTarget.Message;
 
     public ValueTask Dispatch(
-        ScheduledMessageEntry scheduled,
+        ScheduledMessageDispatch scheduled,
         CancellationToken cancellationToken)
     {
         var message = serializer.Deserialize(
-            scheduled.Message);
+            scheduled.MessageData);
 
         var enqueue = Invokers.GetOrAdd(
             message.GetType(),
@@ -58,13 +58,13 @@ internal sealed class OutboxScheduledMessageDelivery(
 
     private static void EnqueueMessage<TMessage>(
         IOutbox outbox,
-        ScheduledMessageEntry scheduled,
+        ScheduledMessageDispatch scheduled,
         object message)
         where TMessage : notnull
     {
         outbox.Enqueue(
             new OutboxMessage<TMessage>(
-                scheduled.Id.Value,
+                scheduled.ScheduleId.Value,
                 (TMessage)message,
                 scheduled.CorrelationId,
                 scheduled.CausationId));

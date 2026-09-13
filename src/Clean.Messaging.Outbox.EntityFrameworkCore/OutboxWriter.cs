@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Clean.Messaging.Outbox.EntityFrameworkCore;
 
-internal interface IOutboxWriter
+public interface IOutboxWriter
 {
     void Stage(
         DbContext db,

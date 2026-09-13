@@ -1,10 +1,10 @@
 namespace Clean.Messaging.Scheduling;
 
-internal interface IScheduledMessageDelivery
+public interface IScheduledMessageDelivery
 {
     ScheduledMessageTarget Target { get; }
 
     ValueTask Dispatch(
-        ScheduledMessageEntry message,
+        ScheduledMessageDispatch message,
         CancellationToken cancellationToken);
 }

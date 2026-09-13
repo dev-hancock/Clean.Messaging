@@ -5,7 +5,7 @@ using System.Collections.Frozen;
 
 namespace Clean.Messaging.Consumers;
 
-internal interface IConsumerInvoker
+public interface IConsumerInvoker
 {
     string ConsumerId { get; }
 
@@ -49,7 +49,7 @@ internal sealed class ConsumerInvoker<TMessage, TConsumer>(string consumerId)
     }
 }
 
-internal interface IConsumerRegistry
+public interface IConsumerRegistry
 {
     IEnumerable<IConsumerInvoker> All { get; }
 

@@ -2,7 +2,7 @@ using Clean.Messaging.Serialization;
 
 namespace Clean.Messaging.Inbox;
 
-internal sealed class InboxAdmission
+public sealed class InboxAdmission
 {
     public Guid MessageId { get; init; }
 

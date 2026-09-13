@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace Clean.Messaging.Inbox;
 
-internal sealed partial class InboxProcessor(
+public sealed partial class InboxProcessor(
     IInboxStore store,
     IInboxDispatcher dispatcher,
     ClaimRenewal renewal,

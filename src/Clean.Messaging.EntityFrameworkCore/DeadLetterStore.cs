@@ -8,7 +8,7 @@ using System.Transactions;
 
 namespace Clean.Messaging.EntityFrameworkCore;
 
-internal sealed class DeadLetterStore<
+public sealed class DeadLetterStore<
     TDbContext,
     TEntry>(
     TDbContext db,

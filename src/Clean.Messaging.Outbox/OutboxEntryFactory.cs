@@ -3,7 +3,7 @@ using Clean.Messaging.Serialization;
 
 namespace Clean.Messaging.Outbox;
 
-internal sealed class OutboxEntryFactory(
+public sealed class OutboxEntryFactory(
     IEnumerable<IOutboxTargetProvider> targets,
     IMessageSerializer serializer,
     IMessageContext context,

@@ -1,6 +1,6 @@
 namespace Clean.Messaging.Scheduling;
 
-internal interface ISchedulingEngine
+public interface ISchedulingEngine
 {
     void Wake();
 

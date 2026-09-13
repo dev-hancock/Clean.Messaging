@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Clean.Messaging.EntityFrameworkCore;
 
-internal static class DurableEntryConfiguration
+public static class DurableEntryConfiguration
 {
     public static void Configure<TEntry>(
         EntityTypeBuilder<TEntry> builder,

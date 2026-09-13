@@ -7,7 +7,7 @@ internal sealed record MessageContractRegistration(
     Type Type,
     string Contract);
 
-internal interface IMessageContractRegistry
+public interface IMessageContractRegistry
 {
     string GetContract(Type type);
 

@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 
 namespace Clean.Messaging.Retry;
 
-internal readonly record struct RetryResult(
+public readonly record struct RetryResult(
     bool ShouldRetry,
     TimeSpan Delay)
 {
@@ -15,7 +15,7 @@ internal readonly record struct RetryResult(
         new(true, delay);
 }
 
-internal sealed class RetryPolicy(
+public sealed class RetryPolicy(
     IOptions<RetryOptions> options)
 {
     private readonly RetryOptions _options = options.Value;

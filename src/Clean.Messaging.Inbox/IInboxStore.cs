@@ -3,7 +3,7 @@ using Clean.Messaging.Serialization;
 
 namespace Clean.Messaging.Inbox;
 
-internal sealed record InboxBatch(
+public sealed record InboxBatch(
     Guid MessageId,
     Guid EventId,
     MessageData Message,
@@ -15,7 +15,7 @@ internal sealed record InboxBatch(
     public bool IsEmpty =>
         Entries.Count == 0;
 }
-internal interface IInboxStore :
+public interface IInboxStore :
     IDurableStore<InboxEntry>
 {
     ValueTask Accept(

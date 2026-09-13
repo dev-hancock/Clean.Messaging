@@ -2,7 +2,7 @@ using System.Diagnostics.Metrics;
 
 namespace Clean.Messaging.Processing;
 
-internal static class MessageMetrics
+public static class MessageMetrics
 {
     private static readonly Meter Meter = new("Clean.Messaging");
 

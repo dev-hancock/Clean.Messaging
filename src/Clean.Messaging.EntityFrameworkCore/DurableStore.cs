@@ -8,7 +8,7 @@ using System.Linq.Expressions;
 
 namespace Clean.Messaging.EntityFrameworkCore;
 
-internal abstract class DurableStore<TDbContext, TEntry>(
+public abstract class DurableStore<TDbContext, TEntry>(
     TDbContext db,
     IServiceScopeFactory scopes)
     : IDurableStore<TEntry>

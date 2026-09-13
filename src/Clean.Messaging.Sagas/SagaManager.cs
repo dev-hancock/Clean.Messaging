@@ -4,7 +4,7 @@ namespace Clean.Messaging.Sagas;
 
 internal sealed class SagaManager(
     ISagaStore sagas,
-    IScheduledMessageStore scheduler)
+    IScheduledMessageReader scheduler)
     : ISagaManager
 {
     public async ValueTask<Saga?> Get(
@@ -94,13 +94,13 @@ internal sealed class SagaManager(
 
     private static SagaTimer Map(
         SagaEntry saga,
-        ScheduledMessageEntry timer)
+        ScheduledMessageStatus timer)
     {
         return new(
-            timer.Id.Value,
+            timer.ScheduleId.Value,
             saga.Id,
             saga.Type,
-            timer.Message.Type,
+            timer.MessageData.Type,
             timer.DueAt,
             timer.Attempts,
             timer.NextAttemptAt,

@@ -2,7 +2,7 @@ using Clean.Messaging.Persistence;
 
 namespace Clean.Messaging.Outbox;
 
-internal interface IOutboxDelivery
+public interface IOutboxDelivery
 {
     string Transport { get; }
 

@@ -6,7 +6,7 @@ using System.Transactions;
 
 namespace Clean.Messaging.Outbox.EntityFrameworkCore;
 
-internal sealed class OutboxTracker(
+public sealed class OutboxTracker(
     OutboxSignal signal)
 {
     private readonly ConditionalWeakTable<DbContext, ContextState> _states = new();

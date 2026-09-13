@@ -5,7 +5,7 @@ using System.Threading.Channels;
 
 namespace Clean.Messaging.Processing;
 
-internal sealed partial class WorkLoop<TEntry>(
+public sealed partial class WorkLoop<TEntry>(
     IServiceScopeFactory scopes,
     TimeProvider time,
     ILogger<WorkLoop<TEntry>> logger)

@@ -6,4 +6,7 @@
     <IsPackable>true</IsPackable>
     <Description>Optional DDD aggregate and domain-event primitives for Clean.Messaging.</Description>
   </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
 </Project>

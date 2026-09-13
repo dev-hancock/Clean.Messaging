@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Clean.Messaging.Outbox.EntityFrameworkCore;
 
-internal interface IOutboxCapture
+public interface IOutboxCapture
 {
     void Capture(DbContext db);
 }

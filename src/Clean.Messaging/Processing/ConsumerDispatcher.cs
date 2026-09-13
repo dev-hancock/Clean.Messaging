@@ -3,7 +3,7 @@ using Clean.Messaging.Serialization;
 
 namespace Clean.Messaging.Processing;
 
-internal sealed class ConsumerDispatcher(
+public sealed class ConsumerDispatcher(
     IConsumerRegistry consumers,
     IMessageSerializer serializer,
     IServiceProvider services)

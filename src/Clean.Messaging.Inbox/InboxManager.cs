@@ -4,7 +4,7 @@ using Clean.Messaging.Serialization;
 
 namespace Clean.Messaging.Inbox;
 
-internal sealed class InboxManager(
+public sealed class InboxManager(
     IInboxStore inbox,
     IDeadLetterStore<InboxEntry> deadLetters,
     IMessageContractRegistry contracts,

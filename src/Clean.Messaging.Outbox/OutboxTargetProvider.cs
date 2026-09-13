@@ -2,7 +2,7 @@ using Clean.Messaging.Consumers;
 
 namespace Clean.Messaging.Outbox;
 
-internal sealed class OutboxTargetProvider(
+public sealed class OutboxTargetProvider(
     IConsumerRegistry consumers)
     : IOutboxTargetProvider
 {

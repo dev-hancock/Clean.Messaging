@@ -13,21 +13,21 @@ internal sealed class SagaScheduledMessageDelivery(
         Target;
 
     public ValueTask Dispatch(
-        ScheduledMessageEntry message,
+        ScheduledMessageDispatch message,
         CancellationToken cancellationToken)
     {
-        var groupId = message.GroupId
+        var groupId = message.ScheduleGroupId
                       ?? throw new SagaSerializationException(
-                          $"Scheduled saga timer '{message.Id}' has no saga group.");
+                          $"Scheduled saga timer '{message.ScheduleId}' has no saga group.");
 
         return processor.ProcessTimer(
             new SagaId(groupId.Value),
-            message.Message,
+            message.MessageData,
             new(
-                message.Id.Value,
+                message.ScheduleId.Value,
                 message.CorrelationId,
                 message.CausationId,
-                message.Id.Value),
+                message.ScheduleId.Value),
             cancellationToken);
     }
 }

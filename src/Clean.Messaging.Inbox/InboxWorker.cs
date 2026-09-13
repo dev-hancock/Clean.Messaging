@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace Clean.Messaging.Inbox;
 
-internal sealed class InboxWorker(
+public sealed class InboxWorker(
     WorkLoop<InboxEntry> loop,
     InboxSignal signal,
     IOptions<InboxOptions> options)

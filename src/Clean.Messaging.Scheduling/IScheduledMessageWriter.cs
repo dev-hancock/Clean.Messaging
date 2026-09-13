@@ -1,6 +1,6 @@
 namespace Clean.Messaging.Scheduling;
 
-internal interface IScheduledMessageWriter
+public interface IScheduledMessageWriter
 {
     ScheduleId Schedule<TMessage>(
         ScheduleId id,

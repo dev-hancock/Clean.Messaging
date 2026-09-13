@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 
 namespace Clean.Messaging.Inbox;
 
-internal sealed class InboxCleanup(
+public sealed class InboxCleanup(
     IServiceScopeFactory scopes,
     TimeProvider time,
     IOptions<InboxOptions> options,

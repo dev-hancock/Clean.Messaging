@@ -3,7 +3,7 @@ using System.Collections.Frozen;
 
 namespace Clean.Messaging.Outbox;
 
-internal sealed class OutboxDispatcher(
+public sealed class OutboxDispatcher(
     IEnumerable<IOutboxDelivery> deliveries)
     : IOutboxDispatcher
 {

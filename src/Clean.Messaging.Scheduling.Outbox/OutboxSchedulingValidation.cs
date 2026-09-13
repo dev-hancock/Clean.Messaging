@@ -18,11 +18,10 @@ internal sealed class OutboxSchedulingValidation(
         _ = services.GetRequiredService<IOutbox>();
         _ = services.GetRequiredService<IMessageScheduler>();
 
-        var deliveries = services
-            .GetRequiredService<ScheduledMessageDeliveryRegistry>();
-
-        _ = deliveries.Get(
-            ScheduledMessageTarget.Message);
+        _ = services
+            .GetServices<IScheduledMessageDelivery>()
+            .Single(delivery =>
+                delivery.Target == ScheduledMessageTarget.Message);
 
         return Task.CompletedTask;
     }

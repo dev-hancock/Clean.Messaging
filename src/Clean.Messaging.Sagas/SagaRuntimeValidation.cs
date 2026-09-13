@@ -20,13 +20,11 @@ internal sealed class SagaRuntimeValidation(
         _ = services.GetRequiredService<IScheduledMessageWriter>();
         _ = services.GetRequiredService<ISagaStore>();
         _ = services.GetRequiredService<SagaRegistry>();
-        _ = services.GetRequiredService<ScheduledMessageDeliveryRegistry>();
 
-        var deliveries = services
-            .GetRequiredService<ScheduledMessageDeliveryRegistry>();
-
-        _ = deliveries.Get(
-            SagaScheduledMessageDelivery.Target);
+        _ = services
+            .GetServices<IScheduledMessageDelivery>()
+            .Single(delivery =>
+                delivery.Target == SagaScheduledMessageDelivery.Target);
 
         return Task.CompletedTask;
     }

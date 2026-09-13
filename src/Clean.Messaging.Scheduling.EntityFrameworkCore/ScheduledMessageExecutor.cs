@@ -131,7 +131,12 @@ internal sealed class ScheduledMessageExecutor<TDbContext>(
             scheduled.Target);
 
         await delivery.Dispatch(
-            scheduled,
+            new(
+                scheduled.Id,
+                scheduled.GroupId,
+                scheduled.Message,
+                scheduled.CorrelationId,
+                scheduled.CausationId),
             cancellationToken);
     }
 

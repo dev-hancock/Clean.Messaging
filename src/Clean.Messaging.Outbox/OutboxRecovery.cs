@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 
 namespace Clean.Messaging.Outbox;
 
-internal sealed class OutboxRecovery(
+public sealed class OutboxRecovery(
     OutboxSignal signal,
     TimeProvider time,
     IOptions<OutboxOptions> options) : BackgroundService

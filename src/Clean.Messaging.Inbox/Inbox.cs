@@ -3,7 +3,7 @@ using Clean.Messaging.Serialization;
 
 namespace Clean.Messaging.Inbox;
 
-internal sealed class Inbox(
+public sealed class Inbox(
     IInboxStore store,
     IConsumerRegistry consumers,
     IMessageSerializer serializer,

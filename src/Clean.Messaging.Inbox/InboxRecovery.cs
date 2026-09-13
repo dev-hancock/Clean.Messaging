@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 
 namespace Clean.Messaging.Inbox;
 
-internal sealed class InboxRecovery(
+public sealed class InboxRecovery(
     InboxSignal signal,
     TimeProvider time,
     IOptions<InboxOptions> options) : BackgroundService

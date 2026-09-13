@@ -3,7 +3,7 @@ using Clean.Messaging.DeadLetters;
 
 namespace Clean.Messaging.Outbox;
 
-internal sealed class OutboxManager(
+public sealed class OutboxManager(
     IDeadLetterStore<OutboxEntry> store,
     OutboxSignal signal)
     : IOutboxManager

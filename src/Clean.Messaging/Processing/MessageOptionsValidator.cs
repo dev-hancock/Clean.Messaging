@@ -2,7 +2,7 @@ using Microsoft.Extensions.Options;
 
 namespace Clean.Messaging.Processing;
 
-internal sealed class MessageOptionsValidator<TOptions> : IValidateOptions<TOptions>
+public sealed class MessageOptionsValidator<TOptions> : IValidateOptions<TOptions>
     where TOptions : MessageOptions
 {
     public ValidateOptionsResult Validate(string? name, TOptions options)
