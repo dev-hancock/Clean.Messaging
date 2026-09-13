@@ -1,9 +1,9 @@
-using System.Text.Json;
 using Clean.Messaging.Exceptions;
+using System.Text.Json;
 
 namespace Clean.Messaging.Serialization;
 
-internal interface IMessageSerializer
+public interface IMessageSerializer
 {
     MessageData Serialize(object message);
 

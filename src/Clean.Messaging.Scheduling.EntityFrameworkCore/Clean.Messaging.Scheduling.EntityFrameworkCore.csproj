@@ -4,20 +4,18 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
-    <Description>Durable saga orchestration for Clean.Messaging.</Description>
+    <Description>Entity Framework Core persistence for Clean.Messaging.Scheduling.</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Clean.Messaging.Abstractions\Clean.Messaging.Abstractions.csproj" />
     <ProjectReference Include="..\Clean.Messaging\Clean.Messaging.csproj" />
-    <ProjectReference Include="..\Clean.Messaging.Outbox\Clean.Messaging.Outbox.csproj" />
+    <ProjectReference Include="..\Clean.Messaging.EntityFrameworkCore\Clean.Messaging.EntityFrameworkCore.csproj" />
     <ProjectReference Include="..\Clean.Messaging.Scheduling\Clean.Messaging.Scheduling.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.11" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
   </ItemGroup>
 </Project>

@@ -30,6 +30,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Clean.Messaging.Outbox.Mqtt
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Clean.Messaging.Inbox.Mqtt", "src\Clean.Messaging.Inbox.Mqtt\Clean.Messaging.Inbox.Mqtt.csproj", "{1879C2B9-0A23-480E-A7ED-3A1E51FBE360}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Clean.Messaging.Scheduling", "src\Clean.Messaging.Scheduling\Clean.Messaging.Scheduling.csproj", "{587F413E-0A3A-0506-CAED-65413CF85B9C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Clean.Messaging.Scheduling.EntityFrameworkCore", "src\Clean.Messaging.Scheduling.EntityFrameworkCore\Clean.Messaging.Scheduling.EntityFrameworkCore.csproj", "{25A5A36D-EE9F-2077-CAC7-23FCB0B1C66E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Clean.Messaging.Scheduling.Quartz", "src\Clean.Messaging.Scheduling.Quartz\Clean.Messaging.Scheduling.Quartz.csproj", "{3E67677D-087D-2318-B2B2-7588DCC91516}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Clean.Messaging.Scheduling.Outbox", "src\Clean.Messaging.Scheduling.Outbox\Clean.Messaging.Scheduling.Outbox.csproj", "{701F2E01-B921-ED6E-A298-6723F07EFD60}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -88,6 +96,22 @@ Global
 		{1879C2B9-0A23-480E-A7ED-3A1E51FBE360}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1879C2B9-0A23-480E-A7ED-3A1E51FBE360}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1879C2B9-0A23-480E-A7ED-3A1E51FBE360}.Release|Any CPU.Build.0 = Release|Any CPU
+		{587F413E-0A3A-0506-CAED-65413CF85B9C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{587F413E-0A3A-0506-CAED-65413CF85B9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{587F413E-0A3A-0506-CAED-65413CF85B9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{587F413E-0A3A-0506-CAED-65413CF85B9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{25A5A36D-EE9F-2077-CAC7-23FCB0B1C66E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{25A5A36D-EE9F-2077-CAC7-23FCB0B1C66E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{25A5A36D-EE9F-2077-CAC7-23FCB0B1C66E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{25A5A36D-EE9F-2077-CAC7-23FCB0B1C66E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3E67677D-087D-2318-B2B2-7588DCC91516}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3E67677D-087D-2318-B2B2-7588DCC91516}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3E67677D-087D-2318-B2B2-7588DCC91516}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3E67677D-087D-2318-B2B2-7588DCC91516}.Release|Any CPU.Build.0 = Release|Any CPU
+		{701F2E01-B921-ED6E-A298-6723F07EFD60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{701F2E01-B921-ED6E-A298-6723F07EFD60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{701F2E01-B921-ED6E-A298-6723F07EFD60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{701F2E01-B921-ED6E-A298-6723F07EFD60}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -106,6 +130,10 @@ Global
 		{1947F9B5-CD8B-4365-A1F3-10A5E37949E3} = {AF8D6B31-7D21-4A98-A781-73A0CCBB578F}
 		{348DFB5C-FFED-456C-BC98-DB61874D58F5} = {AF8D6B31-7D21-4A98-A781-73A0CCBB578F}
 		{1879C2B9-0A23-480E-A7ED-3A1E51FBE360} = {AF8D6B31-7D21-4A98-A781-73A0CCBB578F}
+		{587F413E-0A3A-0506-CAED-65413CF85B9C} = {AF8D6B31-7D21-4A98-A781-73A0CCBB578F}
+		{25A5A36D-EE9F-2077-CAC7-23FCB0B1C66E} = {AF8D6B31-7D21-4A98-A781-73A0CCBB578F}
+		{3E67677D-087D-2318-B2B2-7588DCC91516} = {AF8D6B31-7D21-4A98-A781-73A0CCBB578F}
+		{701F2E01-B921-ED6E-A298-6723F07EFD60} = {AF8D6B31-7D21-4A98-A781-73A0CCBB578F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7388D026-3B56-4D27-BD83-BA264B2C61E6}
