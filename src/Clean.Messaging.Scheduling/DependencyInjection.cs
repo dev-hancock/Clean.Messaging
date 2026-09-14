@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace Clean.Messaging.Scheduling;
@@ -38,6 +39,11 @@ public static class DependencyInjection
 
         services.TryAddScoped<
             ScheduledMessageDeliveryRegistry>();
+
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<
+                IHostedService,
+                SchedulingRuntimeValidation>());
 
         return services;
     }

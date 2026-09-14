@@ -37,7 +37,7 @@ public static class DependencyInjection
 
         services.TryAddScoped<SagaAttempt>();
         services.TryAddScoped<SagaEffectWriter>();
-        services.TryAddScoped<SagaExecution>();
+        services.TryAddScoped<SagaEngine>();
         services.TryAddScoped<SagaProcessor>();
         services.TryAddScoped<ISagaManager, SagaManager>();
 

@@ -2,7 +2,7 @@ using Clean.Messaging.Exceptions;
 
 namespace Clean.Messaging.Sagas;
 
-public sealed class SagaStartConflictException(
+public sealed class SagaConflictException(
     string sagaType,
     SagaKey key)
     : MessageException(
@@ -15,7 +15,7 @@ public sealed class SagaStartConflictException(
     public SagaKey Key { get; } = key;
 }
 
-public sealed class SagaStartClosedException(
+public sealed class SagaClosedException(
     string sagaType,
     SagaKey key)
     : MessageException(

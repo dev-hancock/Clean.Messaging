@@ -31,8 +31,8 @@ public static class DependencyInjection
             SagaStore<TDbContext>>();
 
         builder.Services.TryAddScoped<
-            ISagaStartConflictResolver,
-            SagaStartConflictResolver<TDbContext>>();
+            ISagaConflictResolver,
+            SagaConflictResolver<TDbContext>>();
 
         builder.Services.TryAddScoped<SagaSaveInterceptor>();
 

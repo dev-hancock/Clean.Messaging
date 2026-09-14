@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 namespace Clean.Messaging.Sagas.EntityFrameworkCore;
 
 internal sealed class SagaSaveInterceptor(
-    ISagaStartConflictResolver conflicts)
+    ISagaConflictResolver conflicts)
     : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(

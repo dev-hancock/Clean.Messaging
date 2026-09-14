@@ -103,12 +103,12 @@ public static class DependencyInjection
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<
                 IHostedService,
-                OutboxRecovery>());
+                OutboxRecoveryWorker>());
 
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<
                 IHostedService,
-                OutboxCleanup>());
+                OutboxCleanupWorker>());
 
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<

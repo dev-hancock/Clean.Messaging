@@ -1,12 +1,12 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
-namespace Clean.Messaging.Outbox;
+namespace Clean.Messaging.Inbox;
 
-public sealed class OutboxRecovery(
-    OutboxSignal signal,
+public sealed class InboxRecoveryWorker(
+    InboxSignal signal,
     TimeProvider time,
-    IOptions<OutboxOptions> options) : BackgroundService
+    IOptions<InboxOptions> options) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

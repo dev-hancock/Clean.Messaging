@@ -61,6 +61,11 @@ internal sealed class SchedulingOptionsValidator
             failures.Add("Scheduling cleanup batch size must be greater than zero.");
         }
 
+        if (options.Cleanup.MaxBatchesPerRun <= 0)
+        {
+            failures.Add("Scheduling cleanup max batches per run must be greater than zero.");
+        }
+
         return failures.Count == 0
             ? ValidateOptionsResult.Success
             : ValidateOptionsResult.Fail(failures);

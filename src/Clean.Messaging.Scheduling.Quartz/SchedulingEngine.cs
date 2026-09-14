@@ -4,10 +4,10 @@ using System.Threading.Channels;
 
 namespace Clean.Messaging.Scheduling.Quartz;
 
-internal sealed partial class QuartzSchedulingEngine(
+internal sealed partial class SchedulingEngine(
     IScheduler scheduler,
     TimeProvider time,
-    ILogger<QuartzSchedulingEngine> logger)
+    ILogger<SchedulingEngine> logger)
     : ISchedulingEngine
 {
     private static readonly JobKey Job = new(
@@ -62,7 +62,7 @@ internal sealed partial class QuartzSchedulingEngine(
         }
         catch (Exception exception)
         {
-            QuartzScheduleFailed(
+            ScheduleFailed(
                 logger,
                 exception,
                 dueAt);
@@ -164,7 +164,7 @@ internal sealed partial class QuartzSchedulingEngine(
         EventId = 1,
         Level = LogLevel.Warning,
         Message = "Quartz failed to schedule the messaging wake trigger for '{WakeAt}'. Local recovery remains active.")]
-    private static partial void QuartzScheduleFailed(
+    private static partial void ScheduleFailed(
         ILogger logger,
         Exception exception,
         DateTimeOffset wakeAt);

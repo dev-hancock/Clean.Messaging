@@ -40,9 +40,9 @@ public static class DependencyInjection
         });
 
         services.RemoveAll<ISchedulingEngine>();
-        services.TryAddSingleton<QuartzSchedulingEngine>();
+        services.TryAddSingleton<SchedulingEngine>();
         services.TryAddSingleton<ISchedulingEngine>(provider =>
-            provider.GetRequiredService<QuartzSchedulingEngine>());
+            provider.GetRequiredService<SchedulingEngine>());
 
         return services;
     }

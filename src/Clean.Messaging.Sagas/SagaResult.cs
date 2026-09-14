@@ -1,104 +1,165 @@
+using System.Collections.Immutable;
+
 namespace Clean.Messaging.Sagas;
+
+internal sealed record SagaContinued(
+    ImmutableArray<SagaEffect> Effects)
+    : SagaResult(Effects)
+{
+    internal override void Apply(
+        SagaEntry saga,
+        DateTime now)
+    {
+    }
+
+    protected override SagaResult WithEffects(
+        ImmutableArray<SagaEffect> effects)
+    {
+        return new SagaContinued(effects);
+    }
+}
+
+internal sealed record SagaCompleted(
+    ImmutableArray<SagaEffect> Effects)
+    : SagaResult(Effects)
+{
+    internal override void Apply(
+        SagaEntry saga,
+        DateTime now)
+    {
+        saga.Complete(now);
+    }
+
+    protected override SagaResult WithEffects(
+        ImmutableArray<SagaEffect> effects)
+    {
+        return new SagaCompleted(effects);
+    }
+}
+
+internal sealed record SagaFailed(
+    string Code,
+    string Message,
+    ImmutableArray<SagaEffect> Effects)
+    : SagaResult(Effects)
+{
+    protected override SagaResult WithEffects(
+        ImmutableArray<SagaEffect> effects)
+    {
+        return new SagaFailed(
+            Code,
+            Message,
+            effects);
+    }
+
+    internal override void Apply(
+        SagaEntry saga,
+        DateTime now)
+    {
+        saga.Fail(
+            Code,
+            Message,
+            now);
+    }
+}
 
 public abstract record SagaResult
 {
-    private SagaResult(
-        IReadOnlyList<SagaEffect> effects)
+    internal ImmutableArray<SagaEffect> Effects { get; }
+
+    private protected SagaResult(
+        ImmutableArray<SagaEffect> effects)
     {
-        ArgumentNullException.ThrowIfNull(effects);
-
-        if (effects.Any(effect => effect is null))
-        {
-            throw new ArgumentException(
-                "Saga effects cannot contain null values.",
-                nameof(effects));
-        }
-
-        Effects = effects.ToArray();
+        Effects = effects;
     }
 
-    public IReadOnlyList<SagaEffect> Effects { get; }
-
-    public static SagaResult Continue(
-        params SagaEffect[] effects)
+    public static SagaResult Continue()
     {
-        return new Continuing(effects);
+        return new SagaContinued([]);
     }
 
-    public static SagaResult Complete(
-        params SagaEffect[] effects)
+    public static SagaResult Complete()
     {
-        return new Completing(effects);
+        return new SagaCompleted([]);
     }
 
     public static SagaResult Fail(
         string code,
-        string message,
-        params SagaEffect[] effects)
+        string message)
     {
-        return new Failing(
-            new(code, message),
-            effects);
+        return new SagaFailed(
+            code,
+            message,
+            []);
     }
+
+    public SagaResult Send<TMessage>(
+        Guid id,
+        TMessage message)
+        where TMessage : notnull
+    {
+        if (id == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "Saga message ID cannot be empty.",
+                nameof(id));
+        }
+
+        ArgumentNullException.ThrowIfNull(message);
+
+        return Add(
+            new SagaMessage<TMessage>(
+                id,
+                message));
+    }
+
+    public SagaResult Schedule<TMessage>(
+        Guid timerId,
+        DateTimeOffset dueAt,
+        TMessage message)
+        where TMessage : notnull
+    {
+        if (timerId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "Saga timer ID cannot be empty.",
+                nameof(timerId));
+        }
+
+        ArgumentNullException.ThrowIfNull(message);
+
+        return Add(
+            new SagaSchedule<TMessage>(
+                timerId,
+                dueAt,
+                message));
+    }
+
+    public SagaResult Cancel(
+        Guid timerId)
+    {
+        if (timerId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "Saga timer ID cannot be empty.",
+                nameof(timerId));
+        }
+
+        return Add(
+            new SagaCancel(timerId));
+    }
+
+    protected abstract SagaResult WithEffects(
+        ImmutableArray<SagaEffect> effects);
 
     internal abstract void Apply(
         SagaEntry saga,
         DateTime now);
 
-    private sealed record Continuing
-        : SagaResult
+    private SagaResult Add(
+        SagaEffect effect)
     {
-        public Continuing(
-            IReadOnlyList<SagaEffect> effects)
-            : base(effects)
-        {
-        }
-
-        internal override void Apply(
-            SagaEntry saga,
-            DateTime now)
-        {
-        }
-    }
-
-    private sealed record Completing
-        : SagaResult
-    {
-        public Completing(
-            IReadOnlyList<SagaEffect> effects)
-            : base(effects)
-        {
-        }
-
-        internal override void Apply(
-            SagaEntry saga,
-            DateTime now)
-        {
-            saga.Complete(now);
-        }
-    }
-
-    private sealed record Failing
-        : SagaResult
-    {
-        public Failing(
-            SagaFailure failure,
-            IReadOnlyList<SagaEffect> effects)
-            : base(effects)
-        {
-            Failure = failure;
-        }
-
-        public SagaFailure Failure { get; }
-
-        internal override void Apply(
-            SagaEntry saga,
-            DateTime now)
-        {
-            saga.Fail(
-                Failure.Code,
-                Failure.Message,
-                now);
-        }
+        return WithEffects(
+            Effects.Add(effect));
     }
 }

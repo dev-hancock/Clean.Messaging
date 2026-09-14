@@ -6,7 +6,7 @@ internal interface ISagaTimerRegistration<TState>
     Type MessageType { get; }
 
     ValueTask Invoke(
-        SagaExecution execution,
+        SagaEngine engine,
         SagaDefinition<TState> definition,
         SagaEntry saga,
         object message,
@@ -26,7 +26,7 @@ internal sealed class SagaTimerRegistration<
     public Type MessageType => typeof(TMessage);
 
     public ValueTask Invoke(
-        SagaExecution execution,
+        SagaEngine engine,
         SagaDefinition<TState> definition,
         SagaEntry saga,
         object message,
@@ -39,7 +39,7 @@ internal sealed class SagaTimerRegistration<
                 $"Saga '{definition.Type}' timer expects '{typeof(TMessage)}' but received '{message.GetType()}'.");
         }
 
-        return execution.Invoke<
+        return engine.Invoke<
             TState,
             TMessage,
             THandler>(

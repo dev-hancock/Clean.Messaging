@@ -23,28 +23,9 @@ public sealed class MqttInboxOptions
     public MqttQualityOfServiceLevel QualityOfServiceLevel { get; set; }
         = MqttQualityOfServiceLevel.AtLeastOnce;
 
-    internal void Validate()
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(Host);
-        ArgumentException.ThrowIfNullOrWhiteSpace(ClientId);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(Port);
-        ArgumentOutOfRangeException.ThrowIfZero(
-            SessionExpiryInterval);
-
-        if (ReconnectDelay <= TimeSpan.Zero)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(ReconnectDelay),
-                ReconnectDelay,
-                "Reconnect delay must be greater than zero.");
-        }
-
-        if (ReconnectDelay > TimeSpan.FromMilliseconds(uint.MaxValue - 1))
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(ReconnectDelay),
-                ReconnectDelay,
-                "Reconnect delay must be supported by Task.Delay.");
-        }
-    }
+    /// <summary>
+    /// Discards the broker-held session on the first successful connection
+    /// after this process starts. Subsequent reconnects remain persistent.
+    /// </summary>
+    public bool ResetSessionOnStart { get; set; }
 }

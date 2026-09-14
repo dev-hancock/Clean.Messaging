@@ -46,10 +46,10 @@ public static class DependencyInjection
             ServiceDescriptor.Singleton<IHostedService, InboxWorker>());
 
         services.TryAddEnumerable(
-            ServiceDescriptor.Singleton<IHostedService, InboxRecovery>());
+            ServiceDescriptor.Singleton<IHostedService, InboxRecoveryWorker>());
 
         services.TryAddEnumerable(
-            ServiceDescriptor.Singleton<IHostedService, InboxCleanup>());
+            ServiceDescriptor.Singleton<IHostedService, InboxCleanupWorker>());
 
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<IHostedService, InboxValidation<TDbContext>>());

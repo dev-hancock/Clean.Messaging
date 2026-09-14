@@ -19,12 +19,12 @@ internal sealed partial class MqttInboxWorker(
     private readonly SemaphoreSlim _reconnect = new(0, 1);
 
     private CancellationToken _stoppingToken;
+    private bool _resetSession = options.Value.ResetSessionOnStart;
     private int _disconnecting;
 
     protected override async Task ExecuteAsync(
         CancellationToken stoppingToken)
     {
-        _options.Validate();
         _stoppingToken = stoppingToken;
 
         await using (var scope = scopes.CreateAsyncScope())
@@ -131,6 +131,7 @@ internal sealed partial class MqttInboxWorker(
                 cancellationToken);
 
             EnsureConnected(result);
+            _resetSession = false;
 
             foreach (var route in router.Routes)
             {
@@ -150,6 +151,37 @@ internal sealed partial class MqttInboxWorker(
         {
             _connectionLock.Release();
         }
+    }
+
+    private MqttClientOptions CreateOptions()
+    {
+        var builder = new MqttClientOptionsBuilder()
+            .WithProtocolVersion(
+                MQTTnet.Formatter.MqttProtocolVersion.V500)
+            .WithClientId(
+                _options.ClientId)
+            .WithTcpServer(
+                _options.Host,
+                _options.Port)
+            .WithCleanStart(
+                _resetSession)
+            .WithSessionExpiryInterval(
+                _options.SessionExpiryInterval);
+
+        if (!string.IsNullOrWhiteSpace(
+                _options.Username))
+        {
+            builder.WithCredentials(
+                _options.Username,
+                _options.Password);
+        }
+
+        if (_options.UseTls)
+        {
+            builder.WithTlsOptions(_ => { });
+        }
+
+        return builder.Build();
     }
 
     private async Task Subscribe(
@@ -212,36 +244,6 @@ internal sealed partial class MqttInboxWorker(
             $"at QoS 1 or 2: {reason}. Reason: '{result.ReasonString}'.");
     }
 
-    private MqttClientOptions CreateOptions()
-    {
-        var builder = new MqttClientOptionsBuilder()
-            .WithProtocolVersion(
-                MQTTnet.Formatter.MqttProtocolVersion.V500)
-            .WithClientId(
-                _options.ClientId)
-            .WithTcpServer(
-                _options.Host,
-                _options.Port)
-            .WithCleanStart(false)
-            .WithSessionExpiryInterval(
-                _options.SessionExpiryInterval);
-
-        if (!string.IsNullOrWhiteSpace(
-                _options.Username))
-        {
-            builder.WithCredentials(
-                _options.Username,
-                _options.Password);
-        }
-
-        if (_options.UseTls)
-        {
-            builder.WithTlsOptions(_ => { });
-        }
-
-        return builder.Build();
-    }
-
     private async Task Disconnect(
         IMqttClient client,
         CancellationToken cancellationToken)
@@ -286,21 +288,8 @@ internal sealed partial class MqttInboxWorker(
 
         try
         {
-            IMqttInboxRoute route;
-
-            try
-            {
-                route = router.Resolve(
-                    args.ApplicationMessage.Topic);
-            }
-            catch (Exception exception)
-            {
-                await AcknowledgePoison(
-                    args,
-                    exception);
-
-                return;
-            }
+            var route = router.Resolve(
+                args.ApplicationMessage.Topic);
 
             await using var scope =
                 scopes.CreateAsyncScope();

@@ -54,4 +54,6 @@ public sealed class SchedulingCleanupOptions
         TimeSpan.FromHours(1);
 
     public int BatchSize { get; set; } = 500;
+
+    public int MaxBatchesPerRun { get; set; } = 20;
 }

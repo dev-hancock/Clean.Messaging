@@ -11,7 +11,7 @@ internal interface ISagaDefinition
     IEnumerable<Type> TimerMessageTypes { get; }
 
     ValueTask InvokeTimer(
-        SagaExecution execution,
+        SagaEngine engine,
         SagaEntry saga,
         object message,
         SagaTrigger trigger,
@@ -34,7 +34,7 @@ internal sealed class SagaDefinition<TState>(
     public IEnumerable<Type> TimerMessageTypes => timers.Keys;
 
     public ValueTask InvokeTimer(
-        SagaExecution execution,
+        SagaEngine engine,
         SagaEntry saga,
         object message,
         SagaTrigger trigger,
@@ -49,7 +49,7 @@ internal sealed class SagaDefinition<TState>(
         }
 
         return registration.Invoke(
-            execution,
+            engine,
             this,
             saga,
             message,

@@ -2,7 +2,7 @@ using Clean.Messaging.Scheduling;
 
 namespace Clean.Messaging.Sagas;
 
-internal sealed class SagaExecution(
+internal sealed class SagaEngine(
     ISagaStore store,
     IScheduledMessageWriter scheduler,
     SagaAttempt attempt,

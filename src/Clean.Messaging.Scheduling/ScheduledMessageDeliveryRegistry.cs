@@ -1,3 +1,4 @@
+using Clean.Messaging.Exceptions;
 using System.Collections.Frozen;
 
 namespace Clean.Messaging.Scheduling;
@@ -37,7 +38,9 @@ internal sealed class ScheduledMessageDeliveryRegistry
             return delivery;
         }
 
-        throw new InvalidOperationException(
-            $"Scheduled message target '{target}' is not registered.");
+        throw new MessageException(
+            "scheduling.delivery.target_not_registered",
+            $"Scheduled message target '{target}' is not registered.",
+            FailureAction.Fault);
     }
 }

@@ -17,42 +17,40 @@ public sealed class MqttInboxBuilder
 
     internal int RouteCount { get; private set; }
 
-    public MqttInboxRouteBuilder<TMessage> Subscribe<TMessage>(
+    public void Subscribe<TMessage>(
         string topicFilter,
         Func<MqttApplicationMessage, TMessage> deserialize,
-        Func<MqttApplicationMessage, TMessage, Guid> messageId)
+        Func<MqttApplicationMessage, TMessage, InboxMessage<TMessage>> map)
         where TMessage : notnull
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(topicFilter);
         ArgumentNullException.ThrowIfNull(deserialize);
-        ArgumentNullException.ThrowIfNull(messageId);
+        ArgumentNullException.ThrowIfNull(map);
 
         var route = new MqttInboxRoute<TMessage>(
             topicFilter,
             deserialize,
-            messageId);
+            map);
 
         _services.AddSingleton<IMqttInboxRoute>(route);
         RouteCount++;
-
-        return new(route);
     }
 
-    public MqttInboxRouteBuilder<TMessage> SubscribeJson<TMessage>(
+    public void SubscribeJson<TMessage>(
         string topicFilter,
-        Func<MqttApplicationMessage, TMessage, Guid> messageId,
+        Func<MqttApplicationMessage, TMessage, InboxMessage<TMessage>> map,
         JsonSerializerOptions? json = null)
         where TMessage : notnull
     {
         var options = json ?? new JsonSerializerOptions(
             JsonSerializerDefaults.Web);
 
-        return Subscribe(
+        Subscribe(
             topicFilter,
             message => Deserialize<TMessage>(
                 message,
                 options),
-            messageId);
+            map);
     }
 
     private static TMessage Deserialize<TMessage>(
@@ -60,10 +58,8 @@ public sealed class MqttInboxBuilder
         JsonSerializerOptions options)
         where TMessage : notnull
     {
-        var payload = message.Payload.ToArray();
-
         var value = JsonSerializer.Deserialize<TMessage>(
-            payload,
+            message.Payload.ToArray(),
             options);
 
         return value ?? throw new InvalidOperationException(

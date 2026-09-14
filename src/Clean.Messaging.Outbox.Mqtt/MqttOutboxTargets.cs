@@ -27,7 +27,7 @@ internal sealed class MqttOutboxTargets(
                     $"MQTT route '{route.Id}' produced an empty destination.");
             }
 
-            yield return new OutboxTarget(
+            yield return new(
                 TargetId: route.Id,
                 Transport: MqttTransport.Name,
                 Destination: destination);

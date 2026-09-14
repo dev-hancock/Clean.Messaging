@@ -3,21 +3,21 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Clean.Messaging.Sagas.EntityFrameworkCore;
 
-internal sealed class SagaStartConflictResolver<TDbContext>(
+internal sealed class SagaConflictResolver<TDbContext>(
     IServiceScopeFactory scopes)
-    : ISagaStartConflictResolver
+    : ISagaConflictResolver
     where TDbContext : DbContext
 {
     public Exception? Resolve(
         Exception exception)
     {
         if (exception is not DbUpdateException update ||
-            !TryGetStart(update, out var start))
+            !TryGet(update, out var start))
         {
             return null;
         }
 
-        var persisted = FindPersisted(start);
+        var persisted = Find(start);
 
         return CreateException(
             persisted,
@@ -29,12 +29,12 @@ internal sealed class SagaStartConflictResolver<TDbContext>(
         CancellationToken cancellationToken)
     {
         if (exception is not DbUpdateException update ||
-            !TryGetStart(update, out var start))
+            !TryGet(update, out var start))
         {
             return null;
         }
 
-        var persisted = await FindPersisted(
+        var persisted = await Find(
             start,
             cancellationToken);
 
@@ -43,8 +43,8 @@ internal sealed class SagaStartConflictResolver<TDbContext>(
             start);
     }
 
-    private SagaEntry? FindPersisted(
-        SagaStartIdentity start)
+    private SagaEntry? Find(
+        SagaIdentity start)
     {
         try
         {
@@ -65,8 +65,8 @@ internal sealed class SagaStartConflictResolver<TDbContext>(
         }
     }
 
-    private async ValueTask<SagaEntry?> FindPersisted(
-        SagaStartIdentity start,
+    private async ValueTask<SagaEntry?> Find(
+        SagaIdentity start,
         CancellationToken cancellationToken)
     {
         try
@@ -92,23 +92,27 @@ internal sealed class SagaStartConflictResolver<TDbContext>(
 
     private static Exception? CreateException(
         SagaEntry? persisted,
-        SagaStartIdentity start)
+        SagaIdentity start)
     {
         return persisted switch
         {
+            { StartedByMessageId: var messageId } when messageId == start.MessageId => new SagaRaceException(
+                start.Type,
+                start.Key,
+                start.MessageId),
             null => null,
-            { IsTerminal: true } => new SagaStartClosedException(
+            { IsTerminal: true } => new SagaClosedException(
                 start.Type,
                 start.Key),
-            _ => new SagaStartConflictException(
+            _ => new SagaConflictException(
                 start.Type,
                 start.Key)
         };
     }
 
-    private static bool TryGetStart(
+    private static bool TryGet(
         DbUpdateException exception,
-        out SagaStartIdentity start)
+        out SagaIdentity start)
     {
         var starts = exception.Entries
             .Where(entry =>
@@ -118,23 +122,27 @@ internal sealed class SagaStartConflictResolver<TDbContext>(
                     Entity: SagaEntry
                 })
             .Select(entry => (SagaEntry)entry.Entity)
-            .Select(saga => new SagaStartIdentity(
+            .Select(saga => new SagaIdentity(
                 saga.Type,
-                saga.Key))
+                saga.Key,
+                saga.StartedByMessageId))
             .Distinct()
             .ToArray();
 
         if (starts.Length == 1)
         {
             start = starts[0];
+
             return true;
         }
 
         start = default;
+
         return false;
     }
 
-    private readonly record struct SagaStartIdentity(
+    private readonly record struct SagaIdentity(
         string Type,
-        SagaKey Key);
+        SagaKey Key,
+        Guid MessageId);
 }

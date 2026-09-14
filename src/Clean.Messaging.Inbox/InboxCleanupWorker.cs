@@ -5,11 +5,11 @@ using Microsoft.Extensions.Options;
 
 namespace Clean.Messaging.Inbox;
 
-public sealed class InboxCleanup(
+public sealed class InboxCleanupWorker(
     IServiceScopeFactory scopes,
     TimeProvider time,
     IOptions<InboxOptions> options,
-    ILogger<InboxCleanup> logger) : BackgroundService
+    ILogger<InboxCleanupWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

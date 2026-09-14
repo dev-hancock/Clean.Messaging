@@ -245,7 +245,7 @@ public sealed partial class OutboxProcessor(
         var entry =
             owned.Entry;
 
-        EntryDeadLettered(
+        DeadLettered(
             logger,
             entry.MessageId,
             entry.TargetId,
@@ -274,7 +274,7 @@ public sealed partial class OutboxProcessor(
         MessageMetrics.Completed(
             MetricName);
 
-        EntryCompleted(
+        Completed(
             logger,
             entry.MessageId,
             entry.TargetId,
@@ -287,7 +287,7 @@ public sealed partial class OutboxProcessor(
         MessageMetrics.LeaseLost(
             MetricName);
 
-        EntryClaimLost(
+        ClaimLost(
             logger,
             entry.MessageId,
             entry.TargetId);
@@ -319,7 +319,7 @@ public sealed partial class OutboxProcessor(
     [LoggerMessage(
         Level = LogLevel.Error,
         Message = "Outbox entry {MessageId}/{TargetId} dead-lettered on attempt {Attempt}.")]
-    private static partial void EntryDeadLettered(
+    private static partial void DeadLettered(
         ILogger logger,
         Guid messageId,
         string targetId,
@@ -329,7 +329,7 @@ public sealed partial class OutboxProcessor(
     [LoggerMessage(
         Level = LogLevel.Information,
         Message = "Outbox entry {MessageId}/{TargetId} completed on attempt {Attempt}.")]
-    private static partial void EntryCompleted(
+    private static partial void Completed(
         ILogger logger,
         Guid messageId,
         string targetId,
@@ -338,7 +338,7 @@ public sealed partial class OutboxProcessor(
     [LoggerMessage(
         Level = LogLevel.Warning,
         Message = "Outbox entry {MessageId}/{TargetId} lost its claim.")]
-    private static partial void EntryClaimLost(
+    private static partial void ClaimLost(
         ILogger logger,
         Guid messageId,
         string targetId);

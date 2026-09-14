@@ -12,7 +12,7 @@ internal interface ISagaMessageRegistration<TState, in TMessage>
     where TMessage : notnull
 {
     ValueTask Execute(
-        SagaExecution execution,
+        SagaEngine engine,
         SagaDefinition<TState> definition,
         TMessage message,
         SagaTrigger trigger,
@@ -28,7 +28,7 @@ internal abstract class SagaMessageRegistration<TState, TMessage>(
     public Type MessageType => typeof(TMessage);
 
     public abstract ValueTask Execute(
-        SagaExecution execution,
+        SagaEngine engine,
         SagaDefinition<TState> definition,
         TMessage message,
         SagaTrigger trigger,
@@ -52,7 +52,7 @@ internal sealed class SagaHandleRegistration<
     where THandler : class, ISagaHandler<TState, TMessage>
 {
     public override async ValueTask Execute(
-        SagaExecution execution,
+        SagaEngine engine,
         SagaDefinition<TState> definition,
         TMessage message,
         SagaTrigger trigger,
@@ -60,7 +60,7 @@ internal sealed class SagaHandleRegistration<
     {
         var key = Correlate(message);
 
-        var saga = await execution.Find(
+        var saga = await engine.Find(
             definition.Type,
             key,
             cancellationToken);
@@ -77,7 +77,7 @@ internal sealed class SagaHandleRegistration<
             return;
         }
 
-        await execution.Invoke<
+        await engine.Invoke<
             TState,
             TMessage,
             THandler>(
@@ -101,7 +101,7 @@ internal sealed class SagaStartRegistration<
     where THandler : class, ISagaHandler<TState, TMessage>
 {
     public override async ValueTask Execute(
-        SagaExecution execution,
+        SagaEngine engine,
         SagaDefinition<TState> definition,
         TMessage message,
         SagaTrigger trigger,
@@ -109,7 +109,7 @@ internal sealed class SagaStartRegistration<
     {
         var key = Correlate(message);
 
-        var saga = await execution.Find(
+        var saga = await engine.Find(
             definition.Type,
             key,
             cancellationToken);
@@ -123,23 +123,23 @@ internal sealed class SagaStartRegistration<
 
             if (saga.IsTerminal)
             {
-                throw new SagaStartClosedException(
+                throw new SagaClosedException(
                     definition.Type,
                     key);
             }
 
-            throw new SagaStartConflictException(
+            throw new SagaConflictException(
                 definition.Type,
                 key);
         }
 
-        saga = execution.Create(
+        saga = engine.Create(
             definition,
             key,
             create(message),
             trigger);
 
-        await execution.Invoke<
+        await engine.Invoke<
             TState,
             TMessage,
             THandler>(

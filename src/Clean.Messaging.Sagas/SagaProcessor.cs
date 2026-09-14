@@ -5,7 +5,7 @@ namespace Clean.Messaging.Sagas;
 
 internal sealed class SagaProcessor(
     SagaRegistry registry,
-    SagaExecution execution,
+    SagaEngine engine,
     IMessageSerializer serializer,
     IMessageContext context)
 {
@@ -23,7 +23,7 @@ internal sealed class SagaProcessor(
         var registration = definition.GetMessage<TMessage>();
 
         return registration.Execute(
-            execution,
+            engine,
             definition,
             message,
             new(
@@ -39,7 +39,7 @@ internal sealed class SagaProcessor(
         SagaTrigger trigger,
         CancellationToken cancellationToken)
     {
-        var saga = await execution.Find(
+        var saga = await engine.Find(
             sagaId,
             cancellationToken);
 
@@ -60,7 +60,7 @@ internal sealed class SagaProcessor(
         var message = serializer.Deserialize(data);
 
         await definition.InvokeTimer(
-            execution,
+            engine,
             saga,
             message,
             trigger,
