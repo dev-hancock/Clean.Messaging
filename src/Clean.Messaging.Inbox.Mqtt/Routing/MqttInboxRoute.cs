@@ -1,3 +1,4 @@
+using Clean.Messaging.Inbox.Mqtt.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using MQTTnet;
 
@@ -5,7 +6,7 @@ namespace Clean.Messaging.Inbox.Mqtt.Routing;
 
 internal sealed class MqttInboxRoute<TMessage>(
     string topicFilter,
-    Func<MqttApplicationMessage, TMessage> deserialize,
+    IMqttMessageSerializer serializer,
     Func<MqttApplicationMessage, TMessage, InboxMessage<TMessage>> map)
     : IMqttInboxRoute
     where TMessage : notnull
@@ -21,7 +22,7 @@ internal sealed class MqttInboxRoute<TMessage>(
 
         try
         {
-            var value = deserialize(message);
+            var value = serializer.Deserialize<TMessage>(message);
 
             incoming = map(
                 message,

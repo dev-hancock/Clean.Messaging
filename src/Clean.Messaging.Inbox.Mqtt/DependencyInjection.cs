@@ -1,5 +1,6 @@
 using Clean.Messaging.Inbox.Mqtt.Configuration;
 using Clean.Messaging.Inbox.Mqtt.Routing;
+using Clean.Messaging.Inbox.Mqtt.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -21,6 +22,8 @@ public static class DependencyInjection
             .AddOptions<MqttInboxOptions>()
             .Configure(configure)
             .ValidateOnStart();
+
+        services.TryAddSingleton(MqttSerializers.Json);
 
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<

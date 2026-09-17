@@ -1,8 +1,7 @@
 using Clean.Messaging.Inbox.Mqtt.Routing;
+using Clean.Messaging.Inbox.Mqtt.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using MQTTnet;
-using System.Buffers;
-using System.Text.Json;
 
 namespace Clean.Messaging.Inbox.Mqtt;
 
@@ -20,50 +19,26 @@ public sealed class MqttInboxBuilder
 
     public void Subscribe<TMessage>(
         string topicFilter,
-        Func<MqttApplicationMessage, TMessage> deserialize,
-        Func<MqttApplicationMessage, TMessage, InboxMessage<TMessage>> map)
+        Func<
+            MqttApplicationMessage,
+            TMessage,
+            InboxMessage<TMessage>> map)
         where TMessage : notnull
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(topicFilter);
-        ArgumentNullException.ThrowIfNull(deserialize);
-        ArgumentNullException.ThrowIfNull(map);
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            topicFilter);
 
-        var route = new MqttInboxRoute<TMessage>(
-            topicFilter,
-            deserialize,
+        ArgumentNullException.ThrowIfNull(
             map);
 
-        _services.AddSingleton<IMqttInboxRoute>(route);
+        _services.AddSingleton<IMqttInboxRoute>(
+            services =>
+                new MqttInboxRoute<TMessage>(
+                    topicFilter,
+                    services.GetRequiredService<
+                        IMqttMessageSerializer>(),
+                    map));
+
         RouteCount++;
-    }
-
-    public void SubscribeJson<TMessage>(
-        string topicFilter,
-        Func<MqttApplicationMessage, TMessage, InboxMessage<TMessage>> map,
-        JsonSerializerOptions? json = null)
-        where TMessage : notnull
-    {
-        var options = json ?? new JsonSerializerOptions(
-            JsonSerializerDefaults.Web);
-
-        Subscribe(
-            topicFilter,
-            message => Deserialize<TMessage>(
-                message,
-                options),
-            map);
-    }
-
-    private static TMessage Deserialize<TMessage>(
-        MqttApplicationMessage message,
-        JsonSerializerOptions options)
-        where TMessage : notnull
-    {
-        var value = JsonSerializer.Deserialize<TMessage>(
-            message.Payload.ToArray(),
-            options);
-
-        return value ?? throw new InvalidOperationException(
-            $"MQTT payload on topic '{message.Topic}' deserialized to null for '{typeof(TMessage)}'.");
     }
 }
