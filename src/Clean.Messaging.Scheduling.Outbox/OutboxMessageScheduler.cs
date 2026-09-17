@@ -1,7 +1,9 @@
+using Clean.Messaging.Scheduling.Persistence;
+
 namespace Clean.Messaging.Scheduling.Outbox;
 
 internal sealed class OutboxMessageScheduler(
-    IScheduledMessageWriter writer)
+    IScheduleWriter writer)
     : IMessageScheduler
 {
     public ScheduleId Schedule<TMessage>(
@@ -17,7 +19,7 @@ internal sealed class OutboxMessageScheduler(
             id,
             message,
             dueAt,
-            ScheduledMessageTarget.Message,
+            ScheduleTarget.Message,
             groupId,
             correlationId,
             causationId);
@@ -29,7 +31,7 @@ internal sealed class OutboxMessageScheduler(
     {
         return writer.Cancel(
             id,
-            ScheduledMessageTarget.Message,
+            ScheduleTarget.Message,
             null,
             cancellationToken);
     }
@@ -40,7 +42,7 @@ internal sealed class OutboxMessageScheduler(
     {
         return writer.CancelGroup(
             groupId,
-            ScheduledMessageTarget.Message,
+            ScheduleTarget.Message,
             null,
             cancellationToken);
     }

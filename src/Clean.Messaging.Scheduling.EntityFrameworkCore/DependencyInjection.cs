@@ -1,4 +1,7 @@
 using Clean.Messaging.EntityFrameworkCore;
+using Clean.Messaging.Scheduling.Configuration;
+using Clean.Messaging.Scheduling.Persistence;
+using Clean.Messaging.Scheduling.Runtime;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -20,16 +23,16 @@ public static class DependencyInjection
         builder.Services.AddScheduling(configure);
 
         builder.Services.TryAddScoped<
-            IScheduledMessageStore,
-            ScheduledMessageStore<TDbContext>>();
+            IScheduleStore,
+            ScheduleStore<TDbContext>>();
 
         builder.Services.TryAddScoped<
-            IScheduledMessageReader,
-            ScheduledMessageStore<TDbContext>>();
+            IScheduleReader,
+            ScheduleStore<TDbContext>>();
 
         builder.Services.TryAddScoped<
-            IScheduledMessageExecutor,
-            ScheduledMessageExecutor<TDbContext>>();
+            IScheduleExecutor,
+            ScheduleExecutor<TDbContext>>();
 
         builder.Services.TryAddScoped<SchedulingTracker>();
         builder.Services.TryAddScoped<SchedulingSaveInterceptor>();
@@ -38,12 +41,12 @@ public static class DependencyInjection
         builder.Services.TryAddEnumerable(
             ServiceDescriptor.Singleton<
                 IHostedService,
-                SchedulingWorker>());
+                Runtime.SchedulingWorker>());
 
         builder.Services.TryAddEnumerable(
             ServiceDescriptor.Singleton<
                 IHostedService,
-                SchedulingCleanupWorker>());
+                ScheduleCleanupWorker>());
 
         builder.Services.TryAddEnumerable(
             ServiceDescriptor.Singleton<

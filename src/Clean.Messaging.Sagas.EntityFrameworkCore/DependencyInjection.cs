@@ -1,4 +1,6 @@
 using Clean.Messaging.EntityFrameworkCore;
+using Clean.Messaging.Sagas.Configuration;
+using Clean.Messaging.Sagas.Persistence;
 using Clean.Messaging.Scheduling.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -13,7 +15,7 @@ public static class DependencyInjection
 {
     public static MessagingBuilder<TDbContext> AddSagas<TDbContext>(
         this MessagingBuilder<TDbContext> builder,
-        Action<SagaRegistrationBuilder> configure,
+        Action<SagaBuilder> configure,
         Action<SagaOptions>? configureOptions = null)
         where TDbContext : DbContext
     {
@@ -53,6 +55,7 @@ public static class DependencyInjection
         this ModelBuilder modelBuilder)
     {
         modelBuilder.AddScheduling();
+
         SagaConfiguration.Configure(modelBuilder);
 
         return modelBuilder;

@@ -1,6 +1,10 @@
+using Clean.Messaging.Outbox.Mqtt.Connection;
+using Clean.Messaging.Outbox.Mqtt.Publishing;
+using Clean.Messaging.Outbox.Mqtt.Routing;
+using Clean.Messaging.Outbox.Transport;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using MQTTnet;
+using Microsoft.Extensions.Options;
 
 namespace Clean.Messaging.Outbox.Mqtt;
 
@@ -8,34 +12,41 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddMqttOutbox(
         this IServiceCollection services,
-        MqttClientOptions clientOptions,
-        Action<MqttOutboxOptions>? configure = null)
+        Action<MqttOutboxOptions> configure,
+        Action<MqttOutboxBuilder> routes)
     {
-        ArgumentNullException.ThrowIfNull(
-            services);
+        ArgumentNullException.ThrowIfNull(configure);
+        ArgumentNullException.ThrowIfNull(routes);
 
-        ArgumentNullException.ThrowIfNull(
-            clientOptions);
+        services
+            .AddOptions<MqttOutboxOptions>()
+            .Configure(configure)
+            .ValidateOnStart();
 
-        var options =
-            services.AddOptions<MqttOutboxOptions>();
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<
+                IValidateOptions<MqttOutboxOptions>,
+                MqttOutboxOptionsValidator>());
 
-        if (configure is not null)
+        var builder =
+            new MqttOutboxBuilder(services);
+
+        routes(builder);
+
+        if (builder.RouteCount == 0)
         {
-            options.Configure(
-                configure);
+            throw new InvalidOperationException(
+                "At least one MQTT outbox route must be registered.");
         }
 
-        services.TryAddSingleton(
-            clientOptions);
-
-        services.TryAddSingleton<
-            MqttConnection>();
+        services.TryAddSingleton<MqttConnection>();
 
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<
                 IOutboxTargetProvider,
                 MqttOutboxTargets>());
+
+        services.TryAddSingleton<MqttRouteRegistry>();
 
         services.AddOutboxTransport<
             MqttOutboxTransport>();

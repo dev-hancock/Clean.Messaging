@@ -1,3 +1,4 @@
+using Clean.Messaging.Scheduling.Delivery;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -19,8 +20,8 @@ public static class DependencyInjection
 
         services.TryAddEnumerable(
             ServiceDescriptor.Scoped<
-                IScheduledMessageDelivery,
-                OutboxScheduledMessageDelivery>());
+                IScheduleDelivery,
+                OutboxScheduleDelivery>());
 
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<

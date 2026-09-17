@@ -1,4 +1,3 @@
-using Clean.Messaging.Ddd;
 using Clean.Messaging.EntityFrameworkCore;
 using Clean.Messaging.Outbox.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +8,7 @@ namespace Clean.Messaging.Ddd.EntityFrameworkCore;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddDomainEventCapture(
+    public static IServiceCollection AddDomainEvents(
         this IServiceCollection services)
     {
         services.TryAddEnumerable(
@@ -18,16 +17,16 @@ public static class DependencyInjection
         return services;
     }
 
-    public static MessagingBuilder<TDbContext> AddDomainEventCapture<TDbContext>(
+    public static MessagingBuilder<TDbContext> AddDomainEvents<TDbContext>(
         this MessagingBuilder<TDbContext> builder)
         where TDbContext : DbContext
     {
-        builder.Services.AddDomainEventCapture();
+        builder.Services.AddDomainEvents();
 
         return builder;
     }
 
-    public static ModelBuilder AddDomainEventCapture(
+    public static ModelBuilder AddDomainEvents(
         this ModelBuilder modelBuilder)
     {
         var aggregates = modelBuilder.Model

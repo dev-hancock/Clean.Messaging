@@ -1,6 +1,6 @@
-using Clean.Messaging.Outbox;
 using Clean.Messaging.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Clean.Messaging.Outbox.Persistence;
 
 namespace Clean.Messaging.Outbox.EntityFrameworkCore;
 

@@ -1,3 +1,4 @@
+using Clean.Messaging.Sagas.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Clean.Messaging.Sagas.EntityFrameworkCore;

@@ -1,4 +1,6 @@
 using Clean.Messaging.Abstractions;
+using Clean.Messaging.Outbox.Persistence;
+using Clean.Messaging.Outbox.Runtime;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System.Runtime.CompilerServices;

@@ -1,4 +1,5 @@
 using Clean.Messaging.Outbox;
+using Clean.Messaging.Scheduling.Delivery;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -19,9 +20,9 @@ internal sealed class OutboxSchedulingValidation(
         _ = services.GetRequiredService<IMessageScheduler>();
 
         _ = services
-            .GetServices<IScheduledMessageDelivery>()
+            .GetServices<IScheduleDelivery>()
             .Single(delivery =>
-                delivery.Target == ScheduledMessageTarget.Message);
+                delivery.Target == ScheduleTarget.Message);
 
         return Task.CompletedTask;
     }

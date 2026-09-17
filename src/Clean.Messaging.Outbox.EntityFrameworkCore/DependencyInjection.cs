@@ -1,5 +1,10 @@
 using Clean.Messaging.DeadLetters;
 using Clean.Messaging.EntityFrameworkCore;
+using Clean.Messaging.Outbox.Configuration;
+using Clean.Messaging.Outbox.Delivery;
+using Clean.Messaging.Outbox.Persistence;
+using Clean.Messaging.Outbox.Runtime;
+using Clean.Messaging.Outbox.Transport;
 using Clean.Messaging.Persistence;
 using Clean.Messaging.Processing;
 using Microsoft.EntityFrameworkCore;

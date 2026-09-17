@@ -1,4 +1,10 @@
+using Clean.Messaging.Sagas.Configuration;
+using Clean.Messaging.Sagas.Definition;
+using Clean.Messaging.Sagas.Delivery;
+using Clean.Messaging.Sagas.Effects;
+using Clean.Messaging.Sagas.Runtime;
 using Clean.Messaging.Scheduling;
+using Clean.Messaging.Scheduling.Delivery;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -10,7 +16,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddSagas(
         this IServiceCollection services,
-        Action<SagaRegistrationBuilder> configure,
+        Action<SagaBuilder> configure,
         Action<SagaOptions>? configureOptions = null)
     {
         ArgumentNullException.ThrowIfNull(configure);
@@ -37,14 +43,14 @@ public static class DependencyInjection
 
         services.TryAddScoped<SagaAttempt>();
         services.TryAddScoped<SagaEffectWriter>();
-        services.TryAddScoped<SagaEngine>();
+        services.TryAddScoped<SagaRuntime>();
         services.TryAddScoped<SagaProcessor>();
         services.TryAddScoped<ISagaManager, SagaManager>();
 
         services.TryAddEnumerable(
             ServiceDescriptor.Scoped<
-                IScheduledMessageDelivery,
-                SagaScheduledMessageDelivery>());
+                IScheduleDelivery,
+                SagaScheduleDelivery>());
 
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<
@@ -53,7 +59,7 @@ public static class DependencyInjection
 
 
         var registrations =
-            new SagaRegistrationBuilder(services);
+            new SagaBuilder(services);
 
         configure(registrations);
 

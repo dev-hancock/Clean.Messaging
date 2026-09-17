@@ -1,6 +1,8 @@
+using Clean.Messaging.Scheduling.Persistence;
+using Clean.Messaging.Scheduling.Runtime;
+using Microsoft.EntityFrameworkCore;
 using System.Runtime.CompilerServices;
 using System.Transactions;
-using Microsoft.EntityFrameworkCore;
 
 namespace Clean.Messaging.Scheduling.EntityFrameworkCore;
 
@@ -13,7 +15,7 @@ internal sealed class SchedulingTracker(
         DbContext db)
     {
         var changed = db.ChangeTracker
-            .Entries<ScheduledMessageEntry>()
+            .Entries<ScheduleEntry>()
             .Any(entry => entry.State is
                 EntityState.Added or
                 EntityState.Modified or

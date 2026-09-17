@@ -1,4 +1,4 @@
-using Clean.Messaging.Outbox;
+using Clean.Messaging.Outbox.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Clean.Messaging.Outbox.EntityFrameworkCore;

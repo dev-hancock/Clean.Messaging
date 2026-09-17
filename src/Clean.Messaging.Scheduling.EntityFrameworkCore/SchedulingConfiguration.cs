@@ -1,3 +1,4 @@
+using Clean.Messaging.Scheduling.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Clean.Messaging.Scheduling.EntityFrameworkCore;
@@ -10,12 +11,12 @@ internal static class SchedulingConfiguration
         ModelBuilder modelBuilder)
     {
         if (modelBuilder.Model.FindEntityType(
-                typeof(ScheduledMessageEntry)) is not null)
+                typeof(ScheduleEntry)) is not null)
         {
             return;
         }
 
-        var builder = modelBuilder.Entity<ScheduledMessageEntry>();
+        var builder = modelBuilder.Entity<ScheduleEntry>();
 
         builder.ToTable(TableName);
 

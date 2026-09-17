@@ -1,4 +1,5 @@
 using Clean.Messaging.Abstractions;
+using Clean.Messaging.Outbox.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 

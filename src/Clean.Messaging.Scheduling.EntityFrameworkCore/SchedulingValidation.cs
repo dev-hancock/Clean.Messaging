@@ -1,3 +1,5 @@
+using Clean.Messaging.Scheduling.Persistence;
+using Clean.Messaging.Scheduling.Runtime;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,7 +27,7 @@ internal sealed class SchedulingValidation<TDbContext>(
         }
 
         if (db.Model.FindEntityType(
-                typeof(ScheduledMessageEntry)) is null)
+                typeof(ScheduleEntry)) is null)
         {
             throw new InvalidOperationException(
                 "Map scheduled message persistence with ModelBuilder.AddScheduling().");
@@ -33,8 +35,8 @@ internal sealed class SchedulingValidation<TDbContext>(
 
         ValidateInterceptors(db);
 
-        _ = services.GetRequiredService<IScheduledMessageStore>();
-        _ = services.GetRequiredService<IScheduledMessageExecutor>();
+        _ = services.GetRequiredService<IScheduleStore>();
+        _ = services.GetRequiredService<IScheduleExecutor>();
 
         return Task.CompletedTask;
     }

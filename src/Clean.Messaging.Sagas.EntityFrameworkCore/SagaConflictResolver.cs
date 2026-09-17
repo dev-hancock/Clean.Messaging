@@ -1,3 +1,5 @@
+using Clean.Messaging.Sagas.Exceptions;
+using Clean.Messaging.Sagas.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 

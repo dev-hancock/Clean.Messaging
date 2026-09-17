@@ -1,3 +1,5 @@
+using Clean.Messaging.Sagas.Effects;
+
 namespace Clean.Messaging.Sagas;
 
 public interface ISagaManager

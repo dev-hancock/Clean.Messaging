@@ -1,3 +1,7 @@
+using Clean.Messaging.Scheduling.Configuration;
+using Clean.Messaging.Scheduling.Delivery;
+using Clean.Messaging.Scheduling.Persistence;
+using Clean.Messaging.Scheduling.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -34,11 +38,11 @@ public static class DependencyInjection
             SchedulingEngine>();
 
         services.TryAddScoped<
-            IScheduledMessageWriter,
-            ScheduledMessageWriter>();
+            IScheduleWriter,
+            ScheduleWriter>();
 
         services.TryAddScoped<
-            ScheduledMessageDeliveryRegistry>();
+            ScheduleDeliveryRegistry>();
 
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<

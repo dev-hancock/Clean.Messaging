@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using Clean.Messaging.Sagas.Effects;
+using Clean.Messaging.Sagas.Persistence;
 
 namespace Clean.Messaging.Sagas;
 
@@ -65,13 +67,13 @@ internal sealed record SagaFailed(
 
 public abstract record SagaResult
 {
-    internal ImmutableArray<SagaEffect> Effects { get; }
-
     private protected SagaResult(
         ImmutableArray<SagaEffect> effects)
     {
         Effects = effects;
     }
+
+    internal ImmutableArray<SagaEffect> Effects { get; }
 
     public static SagaResult Continue()
     {

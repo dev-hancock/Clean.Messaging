@@ -1,22 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <IsPackable>true</IsPackable>
-    <Description>Durable outbox processing for Clean.Messaging.</Description>
-  </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Clean.Messaging.Abstractions\Clean.Messaging.Abstractions.csproj" />
-    <ProjectReference Include="..\Clean.Messaging\Clean.Messaging.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.11" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.11" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Properties\" />
-  </ItemGroup>
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>true</IsPackable>
+		<Description>Durable outbox processing for Clean.Messaging.</Description>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Clean.Messaging.Abstractions\Clean.Messaging.Abstractions.csproj" />
+		<ProjectReference Include="..\Clean.Messaging\Clean.Messaging.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.11" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.11" />
+	</ItemGroup>
 </Project>

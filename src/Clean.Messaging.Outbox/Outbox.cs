@@ -1,3 +1,5 @@
+using Clean.Messaging.Outbox.Persistence;
+
 namespace Clean.Messaging.Outbox;
 
 public sealed class Outbox(

@@ -1,3 +1,5 @@
+using Clean.Messaging.Inbox.Mqtt.Configuration;
+using Clean.Messaging.Inbox.Mqtt.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -26,6 +28,7 @@ public static class DependencyInjection
                 MqttInboxOptionsValidator>());
 
         var builder = new MqttInboxBuilder(services);
+
         routes(builder);
 
         if (builder.RouteCount == 0)
@@ -38,7 +41,7 @@ public static class DependencyInjection
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<
                 IHostedService,
-                MqttInboxWorker>());
+                Runtime.MqttInboxWorker>());
 
         return services;
     }
