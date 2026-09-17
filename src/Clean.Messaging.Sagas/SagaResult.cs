@@ -1,6 +1,6 @@
-using System.Collections.Immutable;
 using Clean.Messaging.Sagas.Effects;
 using Clean.Messaging.Sagas.Persistence;
+using System.Collections.Immutable;
 
 namespace Clean.Messaging.Sagas;
 
@@ -74,6 +74,11 @@ public abstract record SagaResult
     }
 
     internal ImmutableArray<SagaEffect> Effects { get; }
+
+    public static implicit operator ValueTask<SagaResult>(SagaResult result)
+    {
+        return ValueTask.FromResult(result);
+    }
 
     public static SagaResult Continue()
     {
