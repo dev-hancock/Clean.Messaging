@@ -1,6 +1,6 @@
 using MQTTnet.Protocol;
 
-namespace Clean.Messaging.Inbox.Mqtt.Configuration;
+namespace Clean.Messaging.Inbox.Ingress.Mqtt.Configuration;
 
 public sealed class MqttInboxOptions
 {
@@ -10,7 +10,8 @@ public sealed class MqttInboxOptions
 
     public required string ClientId { get; set; }
 
-    public uint SessionExpiryInterval { get; set; } = uint.MaxValue;
+    public uint SessionExpiryInterval { get; set; } =
+        uint.MaxValue;
 
     public string? Username { get; set; }
 
@@ -18,10 +19,11 @@ public sealed class MqttInboxOptions
 
     public bool UseTls { get; set; }
 
-    public TimeSpan ReconnectDelay { get; set; } = TimeSpan.FromSeconds(5);
+    public TimeSpan ReconnectDelay { get; set; } =
+        TimeSpan.FromSeconds(5);
 
-    public MqttQualityOfServiceLevel QualityOfServiceLevel { get; set; }
-        = MqttQualityOfServiceLevel.AtLeastOnce;
+    public MqttQualityOfServiceLevel QualityOfServiceLevel { get; set; } =
+        MqttQualityOfServiceLevel.AtLeastOnce;
 
     /// <summary>
     /// Discards the broker-held session on the first successful connection

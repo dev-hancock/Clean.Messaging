@@ -1,12 +1,12 @@
-using Clean.Messaging.Inbox.Mqtt.Configuration;
-using Clean.Messaging.Inbox.Mqtt.Routing;
-using Clean.Messaging.Inbox.Mqtt.Serialization;
+using Clean.Messaging.Inbox.Ingress.Mqtt.Configuration;
+using Clean.Messaging.Inbox.Ingress.Mqtt.Routing;
+using Clean.Messaging.Inbox.Ingress.Mqtt.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
-namespace Clean.Messaging.Inbox.Mqtt;
+namespace Clean.Messaging.Inbox.Ingress.Mqtt;
 
 public static class DependencyInjection
 {
@@ -15,36 +15,49 @@ public static class DependencyInjection
         Action<MqttInboxOptions> configure,
         Action<MqttInboxBuilder> routes)
     {
-        ArgumentNullException.ThrowIfNull(configure);
-        ArgumentNullException.ThrowIfNull(routes);
+        ArgumentNullException.ThrowIfNull(
+            services);
+
+        ArgumentNullException.ThrowIfNull(
+            configure);
+
+        ArgumentNullException.ThrowIfNull(
+            routes);
+
+        services.AddIngress();
 
         services
             .AddOptions<MqttInboxOptions>()
             .Configure(configure)
             .ValidateOnStart();
 
-        services.TryAddSingleton(MqttSerializers.Json);
-
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<
                 IValidateOptions<MqttInboxOptions>,
                 MqttInboxOptionsValidator>());
 
-        var builder = new MqttInboxBuilder(services);
+        var builder =
+            new MqttInboxBuilder(
+                services);
 
         routes(builder);
 
-        if (builder.RouteCount == 0)
+        if (builder.Routes == 0)
         {
             throw new InvalidOperationException(
                 "At least one MQTT inbox route must be registered.");
         }
 
-        services.TryAddSingleton<MqttInboxRouter>();
+        services.TryAddSingleton<
+            MqttInboxRouter>();
+
+        services.TryAddScoped<
+            MqttInboxIngressHandler>();
+
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<
                 IHostedService,
-                Runtime.MqttInboxWorker>());
+                MqttInboxWorker>());
 
         return services;
     }

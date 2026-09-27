@@ -6,6 +6,13 @@ public sealed record OutboxMessage<T>(
     Guid? CorrelationId = null,
     Guid? CausationId = null);
 
+public sealed record OutboxMessage(
+    Guid Id,
+    string Type,
+    object Payload,
+    Guid? CorrelationId = null,
+    Guid? CausationId = null);
+
 public interface IOutbox
 {
     void Enqueue<TMessage>(

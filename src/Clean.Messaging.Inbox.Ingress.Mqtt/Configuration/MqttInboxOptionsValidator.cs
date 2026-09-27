@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
 using MQTTnet.Protocol;
 
-namespace Clean.Messaging.Inbox.Mqtt.Configuration;
+namespace Clean.Messaging.Inbox.Ingress.Mqtt.Configuration;
 
 internal sealed class MqttInboxOptionsValidator
     : IValidateOptions<MqttInboxOptions>
@@ -12,13 +12,15 @@ internal sealed class MqttInboxOptionsValidator
     {
         var failures = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(options.Host))
+        if (string.IsNullOrWhiteSpace(
+                options.Host))
         {
             failures.Add(
                 "MQTT host is required.");
         }
 
-        if (string.IsNullOrWhiteSpace(options.ClientId))
+        if (string.IsNullOrWhiteSpace(
+                options.ClientId))
         {
             failures.Add(
                 "MQTT client ID is required.");
@@ -43,7 +45,8 @@ internal sealed class MqttInboxOptionsValidator
         }
 
         if (options.ReconnectDelay >
-            TimeSpan.FromMilliseconds(uint.MaxValue - 1))
+            TimeSpan.FromMilliseconds(
+                uint.MaxValue - 1))
         {
             failures.Add(
                 "MQTT reconnect delay is too large.");
@@ -59,6 +62,7 @@ internal sealed class MqttInboxOptionsValidator
 
         return failures.Count == 0
             ? ValidateOptionsResult.Success
-            : ValidateOptionsResult.Fail(failures);
+            : ValidateOptionsResult.Fail(
+                failures);
     }
 }

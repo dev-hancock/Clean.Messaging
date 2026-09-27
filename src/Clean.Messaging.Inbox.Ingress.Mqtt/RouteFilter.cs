@@ -1,4 +1,4 @@
-namespace Clean.Messaging.Inbox.Mqtt;
+namespace Clean.Messaging.Inbox.Ingress.Mqtt;
 
 internal sealed class RouteFilter
 {
@@ -17,11 +17,16 @@ internal sealed class RouteFilter
     public static RouteFilter Parse(
         string value)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(value);
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            value);
 
-        var levels = value.Split('/');
+        var levels = value.Split(
+            '/',
+            StringSplitOptions.None);
 
-        for (var index = 0; index < levels.Length; index++)
+        for (var index = 0;
+             index < levels.Length;
+             index++)
         {
             var level = levels[index];
 
@@ -29,21 +34,28 @@ internal sealed class RouteFilter
                 index != levels.Length - 1)
             {
                 throw new InvalidOperationException(
-                    $"MQTT topic filter '{value}' is invalid because '#' must be the last topic level.");
+                    $"MQTT topic filter '{value}' is invalid because " +
+                    "'#' must be the last topic level.");
             }
 
             if (level != "#" &&
-                level.Contains('#', StringComparison.Ordinal))
+                level.Contains(
+                    '#',
+                    StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
-                    $"MQTT topic filter '{value}' is invalid because '#' must occupy an entire topic level.");
+                    $"MQTT topic filter '{value}' is invalid because " +
+                    "'#' must occupy an entire topic level.");
             }
 
             if (level != "+" &&
-                level.Contains('+', StringComparison.Ordinal))
+                level.Contains(
+                    '+',
+                    StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
-                    $"MQTT topic filter '{value}' is invalid because '+' must occupy an entire topic level.");
+                    $"MQTT topic filter '{value}' is invalid because " +
+                    "'+' must occupy an entire topic level.");
             }
         }
 
@@ -55,10 +67,13 @@ internal sealed class RouteFilter
     public bool Overlaps(
         RouteFilter other)
     {
-        ArgumentNullException.ThrowIfNull(other);
+        ArgumentNullException.ThrowIfNull(
+            other);
 
-        if (IsSystemTopic(Levels[0]) !=
-            IsSystemTopic(other.Levels[0]))
+        if (IsSystemTopic(
+                Levels[0]) !=
+            IsSystemTopic(
+                other.Levels[0]))
         {
             return false;
         }
@@ -105,6 +120,9 @@ internal sealed class RouteFilter
     }
 
     private static bool IsSystemTopic(
-        string level) =>
-        level.StartsWith('$');
+        string level)
+    {
+        return level.Length > 0 &&
+            level[0] == '$';
+    }
 }

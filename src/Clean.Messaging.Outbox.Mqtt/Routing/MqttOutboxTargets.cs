@@ -4,10 +4,10 @@ using Clean.Messaging.Outbox.Transport;
 namespace Clean.Messaging.Outbox.Mqtt.Routing;
 
 internal sealed class MqttOutboxTargets(
-    IEnumerable<MqttRoute> routes)
+    IEnumerable<MqttOutboxRoute> routes)
     : IOutboxTargetProvider
 {
-    private readonly MqttRoute[] _routes =
+    private readonly MqttOutboxRoute[] _routes =
         routes.ToArray();
 
     public IEnumerable<OutboxTarget> GetTargets(

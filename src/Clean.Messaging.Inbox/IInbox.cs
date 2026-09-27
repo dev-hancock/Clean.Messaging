@@ -7,6 +7,14 @@ public sealed record InboxMessage<T>(
     Guid? CausationId = null,
     Guid? EventId = null);
 
+public sealed record InboxMessage(
+    Guid Id,
+    string Type,
+    object Payload,
+    Guid? CorrelationId = null,
+    Guid? CausationId = null,
+    Guid? EventId = null);
+
 public interface IInbox
 {
     ValueTask Accept<T>(

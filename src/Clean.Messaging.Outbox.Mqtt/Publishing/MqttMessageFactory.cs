@@ -9,7 +9,7 @@ internal static class MqttMessageFactory
 {
     public static MqttApplicationMessage Create(
         OutboxDispatch message,
-        MqttRoute route,
+        MqttOutboxRoute route,
         MqttOutboxOptions options)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(

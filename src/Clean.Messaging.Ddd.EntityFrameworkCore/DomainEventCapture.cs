@@ -1,4 +1,3 @@
-using Clean.Messaging.Ddd;
 using Clean.Messaging.Outbox;
 using Clean.Messaging.Outbox.EntityFrameworkCore;
 using Clean.Messaging.Outbox.Persistence;

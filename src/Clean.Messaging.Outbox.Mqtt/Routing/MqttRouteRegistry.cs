@@ -3,14 +3,14 @@ using System.Collections.Frozen;
 namespace Clean.Messaging.Outbox.Mqtt.Routing;
 
 internal sealed class MqttRouteRegistry(
-    IEnumerable<MqttRoute> routes)
+    IEnumerable<MqttOutboxRoute> routes)
 {
-    private readonly FrozenDictionary<string, MqttRoute> _routes =
+    private readonly FrozenDictionary<string, MqttOutboxRoute> _routes =
         routes.ToFrozenDictionary(
             route => route.Id,
             StringComparer.Ordinal);
 
-    public MqttRoute Get(string targetId)
+    public MqttOutboxRoute Get(string targetId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(
             targetId);

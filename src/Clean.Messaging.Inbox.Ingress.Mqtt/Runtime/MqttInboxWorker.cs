@@ -1,12 +1,12 @@
-using Clean.Messaging.Inbox.Mqtt.Configuration;
-using Clean.Messaging.Inbox.Mqtt.Routing;
+using Clean.Messaging.Inbox.Ingress.Mqtt.Configuration;
+using Clean.Messaging.Inbox.Ingress.Mqtt.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MQTTnet;
 
-namespace Clean.Messaging.Inbox.Mqtt.Runtime;
+namespace Clean.Messaging.Inbox.Ingress.Mqtt.Runtime;
 
 internal sealed partial class MqttInboxWorker(
     IServiceScopeFactory scopes,
@@ -15,30 +15,46 @@ internal sealed partial class MqttInboxWorker(
     ILogger<MqttInboxWorker> logger)
     : BackgroundService
 {
-    private readonly MqttInboxOptions _options = options.Value;
-    private readonly MqttClientFactory _mqtt = new();
-    private readonly SemaphoreSlim _connectionLock = new(1, 1);
-    private readonly SemaphoreSlim _reconnect = new(0, 1);
+    private readonly MqttInboxOptions _options =
+        options.Value;
+
+    private readonly MqttClientFactory _mqtt =
+        new();
+
+    private readonly SemaphoreSlim _connectionLock =
+        new(1, 1);
+
+    private readonly SemaphoreSlim _reconnect =
+        new(0, 1);
 
     private CancellationToken _stoppingToken;
-    private bool _resetSession = options.Value.ResetSessionOnStart;
+
+    private bool _resetSession =
+        options.Value.ResetSessionOnStart;
+
     private int _disconnecting;
 
     protected override async Task ExecuteAsync(
         CancellationToken stoppingToken)
     {
-        _stoppingToken = stoppingToken;
+        _stoppingToken =
+            stoppingToken;
 
-        await using (var scope = scopes.CreateAsyncScope())
+        await using (var scope =
+                     scopes.CreateAsyncScope())
         {
             _ = scope.ServiceProvider
-                .GetRequiredService<IInbox>();
+                .GetRequiredService<IInboxIngress>();
         }
 
-        using var client = _mqtt.CreateMqttClient();
+        using var client =
+            _mqtt.CreateMqttClient();
 
-        client.ApplicationMessageReceivedAsync += Receive;
-        client.DisconnectedAsync += Disconnected;
+        client.ApplicationMessageReceivedAsync +=
+            Receive;
+
+        client.DisconnectedAsync +=
+            Disconnected;
 
         try
         {
@@ -48,8 +64,11 @@ internal sealed partial class MqttInboxWorker(
         }
         finally
         {
-            client.ApplicationMessageReceivedAsync -= Receive;
-            client.DisconnectedAsync -= Disconnected;
+            client.ApplicationMessageReceivedAsync -=
+                Receive;
+
+            client.DisconnectedAsync -=
+                Disconnected;
 
             try
             {
@@ -128,11 +147,14 @@ internal sealed partial class MqttInboxWorker(
 
         try
         {
-            var result = await client.ConnectAsync(
-                CreateOptions(),
-                cancellationToken);
+            var result =
+                await client.ConnectAsync(
+                    CreateOptions(),
+                    cancellationToken);
 
-            EnsureConnected(result);
+            EnsureConnected(
+                result);
+
             _resetSession = false;
 
             foreach (var route in router.Routes)
@@ -157,18 +179,19 @@ internal sealed partial class MqttInboxWorker(
 
     private MqttClientOptions CreateOptions()
     {
-        var builder = new MqttClientOptionsBuilder()
-            .WithProtocolVersion(
-                MQTTnet.Formatter.MqttProtocolVersion.V500)
-            .WithClientId(
-                _options.ClientId)
-            .WithTcpServer(
-                _options.Host,
-                _options.Port)
-            .WithCleanStart(
-                _resetSession)
-            .WithSessionExpiryInterval(
-                _options.SessionExpiryInterval);
+        var builder =
+            new MqttClientOptionsBuilder()
+                .WithProtocolVersion(
+                    MQTTnet.Formatter.MqttProtocolVersion.V500)
+                .WithClientId(
+                    _options.ClientId)
+                .WithTcpServer(
+                    _options.Host,
+                    _options.Port)
+                .WithCleanStart(
+                    _resetSession)
+                .WithSessionExpiryInterval(
+                    _options.SessionExpiryInterval);
 
         if (!string.IsNullOrWhiteSpace(
                 _options.Username))
@@ -180,7 +203,8 @@ internal sealed partial class MqttInboxWorker(
 
         if (_options.UseTls)
         {
-            builder.WithTlsOptions(_ => { });
+            builder.WithTlsOptions(
+                _ => { });
         }
 
         return builder.Build();
@@ -198,9 +222,10 @@ internal sealed partial class MqttInboxWorker(
                 _options.QualityOfServiceLevel)
             .Build();
 
-        var result = await client.SubscribeAsync(
-            options,
-            cancellationToken);
+        var result =
+            await client.SubscribeAsync(
+                options,
+                cancellationToken);
 
         EnsureSubscribed(
             route,
@@ -225,8 +250,8 @@ internal sealed partial class MqttInboxWorker(
         IMqttInboxRoute route,
         MqttClientSubscribeResult result)
     {
-        var item = result.Items
-            .SingleOrDefault();
+        var item =
+            result.Items.SingleOrDefault();
 
         if (result.Items.Count == 1 &&
             item is not null &&
@@ -290,14 +315,20 @@ internal sealed partial class MqttInboxWorker(
 
         try
         {
-            var route = router.Resolve(
-                args.ApplicationMessage.Topic);
+            var route =
+                router.Resolve(
+                    args.ApplicationMessage.Topic);
 
             await using var scope =
                 scopes.CreateAsyncScope();
 
-            await route.Accept(
-                scope.ServiceProvider,
+            var ingress =
+                scope.ServiceProvider
+                    .GetRequiredService<
+                        MqttInboxIngressHandler>();
+
+            await ingress.Accept(
+                route,
                 args.ApplicationMessage,
                 _stoppingToken);
 
@@ -309,7 +340,13 @@ internal sealed partial class MqttInboxWorker(
         {
             // Leave the delivery unacknowledged during shutdown.
         }
-        catch (MqttInboxPoisonMessageException exception)
+        catch (MqttPoisonMessageException exception)
+        {
+            await AcknowledgePoison(
+                args,
+                exception);
+        }
+        catch (InboxIngressException exception)
         {
             await AcknowledgePoison(
                 args,

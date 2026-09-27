@@ -1,5 +1,6 @@
 using Clean.Messaging.Abstractions;
 using Clean.Messaging.Consumers;
+using Clean.Messaging.Contracts;
 using Clean.Messaging.Failures;
 using Clean.Messaging.Processing;
 using Clean.Messaging.Retry;
@@ -77,9 +78,11 @@ public static class DependencyInjection
         services.AddMessaging();
 
         services.AddSingleton(
-            new MessageContractRegistration(
-                typeof(TMessage),
-                contract));
+            new MessageContract
+            {
+                Name = contract,
+                Type = typeof(TMessage)
+            });
 
         return services;
     }

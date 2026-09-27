@@ -105,19 +105,28 @@ public abstract record SagaResult
         TMessage message)
         where TMessage : notnull
     {
-        if (id == Guid.Empty)
-        {
-            throw new ArgumentException(
-                "Saga message ID cannot be empty.",
-                nameof(id));
-        }
-
-        ArgumentNullException.ThrowIfNull(message);
-
-        return Add(
+        return Send(
             new SagaMessage<TMessage>(
                 id,
                 message));
+    }
+
+    public SagaResult Send<TMessage>(
+        SagaMessage<TMessage> message)
+        where TMessage : notnull
+    {
+        ArgumentNullException.ThrowIfNull(message);
+
+        return Add(message);
+    }
+
+    public SagaResult Schedule<TMessage>(
+        SagaSchedule<TMessage> message)
+        where TMessage : notnull
+    {
+        ArgumentNullException.ThrowIfNull(message);
+
+        return Add(message);
     }
 
     public SagaResult Schedule<TMessage>(
@@ -126,16 +135,7 @@ public abstract record SagaResult
         TMessage message)
         where TMessage : notnull
     {
-        if (timerId == Guid.Empty)
-        {
-            throw new ArgumentException(
-                "Saga timer ID cannot be empty.",
-                nameof(timerId));
-        }
-
-        ArgumentNullException.ThrowIfNull(message);
-
-        return Add(
+        return Schedule(
             new SagaSchedule<TMessage>(
                 timerId,
                 dueAt,

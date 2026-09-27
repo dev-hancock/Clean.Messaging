@@ -38,7 +38,7 @@ public sealed class MqttOutboxBuilder
         }
 
         _services.AddSingleton(
-            new MqttRoute(
+            new MqttOutboxRoute(
                 typeof(TMessage),
                 id,
                 message =>

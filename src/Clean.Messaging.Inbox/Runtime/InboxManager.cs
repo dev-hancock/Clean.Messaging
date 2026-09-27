@@ -1,7 +1,7 @@
 using Clean.Messaging.Abstractions;
+using Clean.Messaging.Contracts;
 using Clean.Messaging.DeadLetters;
 using Clean.Messaging.Inbox.Persistence;
-using Clean.Messaging.Serialization;
 
 namespace Clean.Messaging.Inbox.Runtime;
 

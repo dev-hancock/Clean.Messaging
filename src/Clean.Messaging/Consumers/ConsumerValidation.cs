@@ -1,4 +1,4 @@
-using Clean.Messaging.Serialization;
+using Clean.Messaging.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 

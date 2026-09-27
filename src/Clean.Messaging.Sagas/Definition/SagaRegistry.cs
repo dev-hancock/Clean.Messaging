@@ -1,5 +1,5 @@
+using Clean.Messaging.Contracts;
 using Clean.Messaging.Sagas.Exceptions;
-using Clean.Messaging.Serialization;
 using System.Collections.Frozen;
 
 namespace Clean.Messaging.Sagas.Definition;

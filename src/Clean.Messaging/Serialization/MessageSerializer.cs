@@ -1,3 +1,4 @@
+using Clean.Messaging.Contracts;
 using Clean.Messaging.Exceptions;
 using System.Text.Json;
 

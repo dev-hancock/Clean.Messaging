@@ -19,9 +19,7 @@ public sealed class MessagingBuilder<TDbContext>
         string contract)
         where TMessage : notnull
     {
-        Clean.Messaging.DependencyInjection.AddContract<TMessage>(
-            Services,
-            contract);
+        Services.AddContract<TMessage>(contract);
 
         return this;
     }
@@ -31,9 +29,7 @@ public sealed class MessagingBuilder<TDbContext>
         where TMessage : notnull
         where TConsumer : class, IMessageConsumer<TMessage>
     {
-        Clean.Messaging.DependencyInjection.AddConsumer<TMessage, TConsumer>(
-            Services,
-            consumerId);
+        Services.AddConsumer<TMessage, TConsumer>(consumerId);
 
         return this;
     }

@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Clean.Messaging.Inbox\Clean.Messaging.Inbox.csproj" />
+    <ProjectReference Include="..\Clean.Messaging.Transport\Clean.Messaging.Transport.csproj" />
+  </ItemGroup>
+
+</Project>
