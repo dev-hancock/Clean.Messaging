@@ -15,6 +15,7 @@ internal sealed class TransportIngress<
     TPayload,
     TMessage,
     TMapper>(
+    ITransportSerializer serializer,
     TMapper mapper,
     InboxMessageFactory factory,
     IInbox inbox)
@@ -23,7 +24,7 @@ internal sealed class TransportIngress<
     where TMessage : notnull
     where TMapper :
     class,
-    ITransportMapper<TMessage>
+    ITransportMapper<TPayload, TMessage>
 {
     public IngressMap Map { get; } =
         new(
@@ -38,12 +39,18 @@ internal sealed class TransportIngress<
 
         try
         {
-            var message = mapper.Map(
-                transport);
+            var payload =
+                serializer.Deserialize<TPayload>(
+                    transport.Payload);
 
-            incoming = factory.Create(
-                transport,
-                message);
+            var message =
+                mapper.Map(
+                    payload);
+
+            incoming =
+                factory.Create(
+                    transport,
+                    message);
         }
         catch (InboxIngressException)
         {
@@ -52,7 +59,8 @@ internal sealed class TransportIngress<
         catch (Exception exception)
         {
             throw new InboxIngressException(
-                $"Transport message '{transport.Contract}' could not be mapped.",
+                $"Transport message '{transport.Contract}' could not be mapped " +
+                $"from '{typeof(TPayload)}' to '{typeof(TMessage)}'.",
                 exception);
         }
 

@@ -43,6 +43,6 @@ public static class TransportSerializers
 {
     public static ITransportSerializer Json { get; } =
         new JsonTransportSerializer(
-            new JsonSerializerOptions(
+            new(
                 JsonSerializerDefaults.Web));
 }

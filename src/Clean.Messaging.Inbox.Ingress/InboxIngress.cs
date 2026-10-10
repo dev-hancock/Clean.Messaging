@@ -2,10 +2,6 @@ using Clean.Messaging.Transport;
 
 namespace Clean.Messaging.Inbox.Ingress;
 
-public readonly record struct IngressMap(
-    Type PayloadType,
-    Type MessageType);
-
 public interface IInboxIngress
 {
     ValueTask Accept(

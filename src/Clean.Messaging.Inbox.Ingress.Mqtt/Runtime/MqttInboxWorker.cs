@@ -40,13 +40,6 @@ internal sealed partial class MqttInboxWorker(
         _stoppingToken =
             stoppingToken;
 
-        await using (var scope =
-                     scopes.CreateAsyncScope())
-        {
-            _ = scope.ServiceProvider
-                .GetRequiredService<IInboxIngress>();
-        }
-
         using var client =
             _mqtt.CreateMqttClient();
 
@@ -341,12 +334,6 @@ internal sealed partial class MqttInboxWorker(
             // Leave the delivery unacknowledged during shutdown.
         }
         catch (MqttPoisonMessageException exception)
-        {
-            await AcknowledgePoison(
-                args,
-                exception);
-        }
-        catch (InboxIngressException exception)
         {
             await AcknowledgePoison(
                 args,

@@ -12,7 +12,7 @@ public static class DependencyInjection
         ArgumentNullException.ThrowIfNull(
             services);
 
-        services.TryAddSingleton<ITransportSerializer>(
+        services.TryAddSingleton(
             TransportSerializers.Json);
 
         services.TryAddSingleton<
@@ -47,8 +47,11 @@ public static class DependencyInjection
         where TMessage : notnull
         where TMapper :
         class,
-        ITransportMapper<TMessage>
+        ITransportMapper<TPayload, TMessage>
     {
+        ArgumentNullException.ThrowIfNull(
+            services);
+
         services.AddIngress();
 
         services.TryAddScoped<TMapper>();

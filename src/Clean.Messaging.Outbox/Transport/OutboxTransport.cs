@@ -1,7 +1,6 @@
 using Clean.Messaging.Outbox.Delivery;
 using Clean.Messaging.Outbox.Persistence;
 using Clean.Messaging.Persistence;
-using System.Text;
 
 namespace Clean.Messaging.Outbox.Transport;
 
@@ -22,20 +21,18 @@ internal sealed class OutboxTransport<TTransport>(
         var entry =
             owned.Entry;
 
-        var dispatch =
-            new OutboxDispatch(
+        var envelope =
+            new OutboxEnvelope(
                 entry.MessageId,
                 entry.EventId,
                 entry.TargetId,
                 entry.Destination,
-                entry.Message.Type,
-                Encoding.UTF8.GetBytes(
-                    entry.Message.Value),
+                entry.Message,
                 entry.CorrelationId,
                 entry.CausationId);
 
         await transport.Dispatch(
-            dispatch,
+            envelope,
             cancellationToken);
 
         return await store.Complete(

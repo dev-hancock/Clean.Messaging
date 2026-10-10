@@ -1,21 +1,10 @@
 namespace Clean.Messaging.Outbox.Transport;
 
-public sealed record OutboxDispatch(
-    Guid MessageId,
-    Guid EventId,
-    string TargetId,
-    string? Destination,
-    string Contract,
-    ReadOnlyMemory<byte> Payload,
-    Guid? CorrelationId,
-    Guid? CausationId);
-
-
 public interface IOutboxTransport
 {
     string Name { get; }
 
     ValueTask Dispatch(
-        OutboxDispatch message,
+        OutboxEnvelope envelope,
         CancellationToken cancellationToken);
 }

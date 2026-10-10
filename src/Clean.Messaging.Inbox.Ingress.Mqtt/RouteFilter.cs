@@ -21,8 +21,7 @@ internal sealed class RouteFilter
             value);
 
         var levels = value.Split(
-            '/',
-            StringSplitOptions.None);
+            '/');
 
         for (var index = 0;
              index < levels.Length;

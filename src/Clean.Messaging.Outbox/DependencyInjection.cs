@@ -14,7 +14,7 @@ public static class DependencyInjection
         ArgumentNullException.ThrowIfNull(
             services);
 
-        services.TryAddSingleton<TTransport>();
+        services.TryAddScoped<TTransport>();
 
         services.TryAddEnumerable(
             ServiceDescriptor.Scoped<

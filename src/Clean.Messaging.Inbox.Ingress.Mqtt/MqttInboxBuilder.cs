@@ -1,4 +1,5 @@
 using Clean.Messaging.Inbox.Ingress.Mqtt.Routing;
+using Clean.Messaging.Transport;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Clean.Messaging.Inbox.Ingress.Mqtt;
@@ -13,27 +14,21 @@ public sealed class MqttInboxBuilder
         _services = services;
     }
 
-    internal int Routes { get; private set; }
+    internal int RouteCount { get; private set; }
 
-    public MqttInboxBuilder Subscribe<TMessage>(
+    public Route<TPayload> On<TPayload>(
         string topicFilter)
-        where TMessage : notnull
+        where TPayload : notnull
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(
             topicFilter);
 
-        _services.AddIngress<TMessage>();
-
-        AddRoute(
-            topicFilter,
-            new(
-                typeof(TMessage),
-                typeof(TMessage)));
-
-        return this;
+        return new(
+            this,
+            topicFilter);
     }
 
-    public MqttInboxBuilder Subscribe<
+    internal void Subscribe<
         TPayload,
         TMessage,
         TMapper>(
@@ -41,8 +36,8 @@ public sealed class MqttInboxBuilder
         where TPayload : notnull
         where TMessage : notnull
         where TMapper :
-        class,
-        ITransportMapper<TMessage>
+            class,
+            ITransportMapper<TPayload, TMessage>
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(
             topicFilter);
@@ -52,24 +47,32 @@ public sealed class MqttInboxBuilder
             TMessage,
             TMapper>();
 
-        AddRoute(
-            topicFilter,
-            new(
-                typeof(TPayload),
-                typeof(TMessage)));
-
-        return this;
-    }
-
-    private void AddRoute(
-        string topicFilter,
-        IngressMap map)
-    {
         _services.AddSingleton<IMqttInboxRoute>(
             new MqttInboxRoute(
                 topicFilter,
-                map));
+                new(
+                    typeof(TPayload),
+                    typeof(TMessage))));
 
-        Routes++;
+        RouteCount++;
+    }
+
+    internal void Subscribe<TMessage>(
+        string topicFilter)
+        where TMessage : notnull
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            topicFilter);
+
+        _services.AddIngress<TMessage>();
+
+        _services.AddSingleton<IMqttInboxRoute>(
+            new MqttInboxRoute(
+                topicFilter,
+                new(
+                    typeof(TMessage),
+                    typeof(TMessage))));
+
+        RouteCount++;
     }
 }

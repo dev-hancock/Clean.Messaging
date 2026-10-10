@@ -42,7 +42,7 @@ public static class DependencyInjection
 
         routes(builder);
 
-        if (builder.Routes == 0)
+        if (builder.RouteCount == 0)
         {
             throw new InvalidOperationException(
                 "At least one MQTT inbox route must be registered.");

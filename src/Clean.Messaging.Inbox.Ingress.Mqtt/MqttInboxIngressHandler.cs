@@ -11,19 +11,33 @@ internal sealed class MqttInboxIngressHandler(
     IMessageContractRegistry contracts,
     IInboxIngress ingress)
 {
-    public ValueTask Accept(
+    public async ValueTask Accept(
         IMqttInboxRoute route,
         MqttApplicationMessage message,
         CancellationToken cancellationToken)
     {
-        var transport = Map(
-            route,
-            message);
+        try
+        {
+            var transport = Map(
+                route,
+                message);
 
-        return ingress.Accept(
-            route.Map,
-            transport,
-            cancellationToken);
+            await ingress.Accept(
+                route.Map,
+                transport,
+                cancellationToken);
+        }
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (InboxIngressException exception)
+        {
+            throw new MqttPoisonMessageException(
+                $"MQTT message for route '{route.TopicFilter}' could not be admitted.",
+                exception);
+        }
     }
 
     private TransportMessage Map(
@@ -31,22 +45,11 @@ internal sealed class MqttInboxIngressHandler(
         MqttApplicationMessage message)
     {
         var contract = contracts.GetContract(
-            route.Map.MessageType);
+            route.Map.PayloadType);
 
-        var declaredContract = Get(
+        ValidateContract(
             message,
-            MqttHeaders.Contract);
-
-        if (declaredContract is not null &&
-            !string.Equals(
-                declaredContract,
-                contract,
-                StringComparison.Ordinal))
-        {
-            throw new MqttPoisonMessageException(
-                $"MQTT message on topic '{message.Topic}' declared contract " +
-                $"'{declaredContract}' but route expects '{contract}'.");
-        }
+            contract);
 
         return new()
         {
@@ -74,6 +77,9 @@ internal sealed class MqttInboxIngressHandler(
             ContentType = message.ContentType,
 
             Headers = message.UserProperties
+                .Where(property =>
+                    !IsReservedHeader(
+                        property.Name))
                 .Select(property =>
                     new TransportHeader(
                         property.Name,
@@ -81,6 +87,29 @@ internal sealed class MqttInboxIngressHandler(
                 .ToArray()
         };
     }
+
+    private static void ValidateContract(
+        MqttApplicationMessage message,
+        string contract)
+    {
+        var declared = Get(
+            message,
+            MqttHeaders.Contract);
+
+        if (declared is null ||
+            string.Equals(
+                declared,
+                contract,
+                StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        throw new MqttPoisonMessageException(
+            $"MQTT message on topic '{message.Topic}' declared contract " +
+            $"'{declared}' but route expects '{contract}'.");
+    }
+
     private static ReadOnlyMemory<byte> GetPayload(
         MqttApplicationMessage message)
     {
@@ -88,6 +117,14 @@ internal sealed class MqttInboxIngressHandler(
             ? message.Payload.First
             : message.Payload.ToArray();
     }
+
+    private static bool IsReservedHeader(
+        string name) =>
+        name is MqttHeaders.MessageId or
+            MqttHeaders.EventId or
+            MqttHeaders.Contract or
+            MqttHeaders.CorrelationId or
+            MqttHeaders.CausationId;
 
     private static Guid? GetGuid(
         MqttApplicationMessage message,
