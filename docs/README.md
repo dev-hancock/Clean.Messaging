@@ -19,6 +19,7 @@ Source-reviewed contracts and current behaviour, with conditional guarantees and
 | [Transport and MQTT](reference/transport.md) | What are the mapping, route, metadata, connection and acknowledgement contracts? |
 | [Scheduling](reference/scheduling.md) | How are durable schedules stored, executed, cancelled and integrated with outbox/Quartz? |
 | [Sagas](reference/sagas.md) | How do definitions, handlers, state, timers, effects and concurrency work? |
+| [Automated testing](reference/testing.md) | Which test project, dependencies, runner commands and isolation boundaries are supported? |
 
 ## Explanation
 
@@ -34,7 +35,7 @@ Conceptual reasoning based on the current mechanisms, not undocumented claims ab
 
 ## Behavioural specifications
 
-[Specifications index](specifications/INDEX.md): capability-organised contracts, stable acceptance criteria, source/public-contract inspection and future verification traceability. This draft separates **Required**, **Observed**, **Proposed** and **Unknown** behaviour; source observations and proposals are not automatically approved requirements. [Open decisions](specifications/GAPS.md) remain explicit. No acceptance criteria have been executed.
+[Specifications index](specifications/INDEX.md): capability-organised contracts and stable acceptance criteria, with shared boundaries and individual numbered specification pages. Specifications distinguish **Required**, **Observed**, **Proposed** and **Unknown** behaviour; source observations and proposals are not automatically approved requirements. [Open decisions](specifications/GAPS.md) remain explicit. The [testing reference](reference/testing.md) describes repeatable execution and stable criterion metadata; run results belong in test and CI artifacts.
 
 Specifications are a separate responsibility from Diátaxis Reference and Explanation: they define the candidate behavioural baseline against which a future test suite can be reviewed.
 

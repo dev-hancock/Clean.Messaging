@@ -10,6 +10,6 @@ The [architecture package map](reference/architecture.md#package-map) follows so
 
 ## Validation baseline
 
-No test project, sample host, or repository documentation-validation tooling was present when the initial documentation was reviewed. Friend-assembly declarations mentioning tests do not establish an executable test suite. TUnit is the preferred framework for new .NET tests under the [coding standards](CODING_STANDARDS.md#15-testing-and-validation), not a claim that tests already exist.
+The [TUnit foundation](reference/testing.md) provides an executable test project with stable acceptance-criterion metadata. Friend-assembly declarations alone do not establish an executable suite. No sample host or repository documentation-validation tooling is supplied. The test foundation does not resolve stale solution entries or certify external providers.
 
 The architecture reference is based on source inspection. It does not establish successful end-to-end execution or tested database-provider compatibility. Documentation links and structure can be checked independently of a code build.

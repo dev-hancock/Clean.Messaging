@@ -1,202 +1,204 @@
-# Behavioural specifications index
+# Behavioural specification index
 
-**Status:** Draft, source-reviewed 2026-10-13; acceptance criteria **Not tested**.
+A capability-based catalogue of behavioural contracts and unresolved decisions. Each numbered specification owns its acceptance criteria; capability README pages hold shared contracts, invariants and limitations.
 
-## Authority and intended use
-This set is the candidate behavioural baseline for a future TUnit suite. It is separate from Diátaxis [Reference](../README.md#reference) and [Explanation](../README.md#explanation), which describe source-derived facts and conceptual consequences. Existing normative repository instructions, coding standards and established public contracts support **Required behaviour**. Source alone supports **Observed behaviour**, not approval that it is correct. **Proposed behaviour** requires an explicit design decision. **Unknown behaviour** records an undecided contract and has no unconditional expected outcome.
+## Requirement authority
 
-Acceptance criteria inherit their specification's classification unless explicitly noted otherwise. Do not turn observed defects into regression requirements merely because they are counted here. Required criteria remain untested and may expose implementation contradictions. Approval of a proposal must be recorded before it becomes a required test contract; identifiers must remain stable when text is revised.
+- **Required behaviour** is grounded in normative repository instructions or explicit public contracts.
+- **Observed behaviour** describes implementation evidence, not an approved requirement.
+- **Proposed behaviour** is conditional on an explicit owner decision.
+- **Unknown behaviour** identifies undecided intent without unconditional acceptance outcomes.
 
-## Scope and completeness evidence
-All **250 authored files** under `src/` across **20 projects** were inspected: **229 .cs files**, **20 .csproj files**, **1 .md files**. Generated `bin/` and `obj/` output is excluded. The [inspection register](INSPECTION.md) shows each file, public surface and linked specifications rather than asserting exhaustive behaviour from totals alone.
+Acceptance criteria inherit their owning specification's classification unless explicitly stated otherwise. Moving a document or linking a test does not approve a proposal or establish conformance. [GAPS.md](GAPS.md) retains unresolved questions and contractual discrepancies.
 
-This draft contains **15 capability documents, 139 specifications and 504 acceptance criteria**. No build, automated acceptance test, relational provider, broker, Quartz deployment or end-to-end host was executed. Source-visible paths were traced; actual execution/locking/uncertain-commit outcomes are not certified.
+## Capabilities
 
-| Classification | Specifications | Acceptance criteria | Authority |
-| --- | --- | --- | --- |
-| Required behaviour | 28 | 79 | Established contract; untested |
-| Observed behaviour | 94 | 422 | Current source; not approved |
-| Proposed behaviour | 4 | 3 | Approval required |
-| Unknown behaviour | 13 | 0 | Decision required; not an asserted outcome |
+### [Claims, leases and settlement ownership](claims-leases/README.md)
 
-## Capability catalogue
-Every block below has its own stable identifier. Public contract details and failures are in the linked capability; the file-level public inventory is in [INSPECTION.md](INSPECTION.md).
+- [CLAIM-001 — Claim eligibility and attempt accounting](claims-leases/CLAIM-001-claim-eligibility-and-attempt-accounting.md)
+- [CLAIM-002 — Stale settlement rejection](claims-leases/CLAIM-002-stale-settlement-rejection.md)
+- [CLAIM-003 — Owned-state and expiry predicates](claims-leases/CLAIM-003-owned-state-and-expiry-predicates.md)
+- [CLAIM-004 — Renewal loss and cooperative cancellation](claims-leases/CLAIM-004-renewal-loss-and-cooperative-cancellation.md)
+- [CLAIM-005 — Lease arithmetic and caller invariants](claims-leases/CLAIM-005-lease-arithmetic-and-caller-invariants.md)
 
-| Capability/document | Specification identifiers | Criteria | Public surface |
-| --- | --- | --- | --- |
-| [Claims, leases and settlement ownership](claims-leases.md) | CLAIM-001, CLAIM-002, CLAIM-003, CLAIM-004, CLAIM-005 | 16 | `IDurableStore<T>.Claim/Renew/Complete/Retry/DeadLetter`, `OwnedEntry<T>`, `ClaimRenewal.Run`, `MessageLeaseOptions`, `ClaimId`; scheduling ownership is distinct in scheduling.md. |
-| [Configuration, validation and host composition](configuration.md) | CONFIG-001, CONFIG-002, CONFIG-003, CONFIG-004, CONFIG-005, CONFIG-006 | 20 | Core AddMessaging overloads, AddContract/AddConsumer; MessagingBuilder<T>.Services/AddContract/AddConsumer/ConfigureRetry; PersistenceServices.EnsurePersistence/AddOptions; MessageOptions and nested options, MessageOptionsValidator; feature registrars and validators are traced in their capability specifications. |
-| [Core contracts and durable serialization](core-contracts.md) | CORE-001, CORE-002, CORE-003, CORE-004, CORE-005 | 18 | `IMessageConsumer<T>.Handle`, `IConsumerInvoker` (identity, message/consumer types and `Invoke`), `IConsumerRegistry.All/Get`, `MessageContract`, `IMessageContractRegistry.GetContract/GetType`, `IMessageSerializer.Serialize/Deserialize`, `MessageData`, `ConsumerDispatcher.Dispatch`. |
-| [Domain events behavioural specifications](domain-events.md) | DOMAIN-001, DOMAIN-002, DOMAIN-003, DOMAIN-004, DOMAIN-005, DOMAIN-006, DOMAIN-007, DOMAIN-008, DOMAIN-009, DOMAIN-010 | 27 | `AggregateRoot.Raise`, `IDomainEventSource.Events/Acknowledge`, `RaisedEvent`; service and messaging-builder `AddDomainEvents` capture registration. |
-| [Message identity and execution context](identity-context.md) | IDENTITY-001, IDENTITY-002, IDENTITY-003, IDENTITY-004, IDENTITY-005 | 11 | `EntryKey`, `IMessageContext`, `MessageContext.Push` and disposable scope; `ClaimId.Create`; envelope identities and metadata are specified in inbox/outbox/domain/scheduling/saga/transport pages. |
-| [Inbox behavioural specifications](inbox.md) | INBOX-001, INBOX-002, INBOX-003, INBOX-004, INBOX-005, INBOX-006, INBOX-007, INBOX-008, INBOX-009, INBOX-010, INBOX-011, INBOX-012, INBOX-013, INBOX-014, INBOX-015 | 49 | `IInbox.Accept`, `InboxMessage<T>`, `InboxBatch`, `InboxAdmission`, `InboxEntry`, `IInboxStore`, `IInboxDispatcher`, `IInboxManager`, `ReplayResult`, `InboxOptions`; runtime, builder, model and interceptor registration overloads. |
-| [Dead letters, retention and observability](management-observability.md) | OPS-001, OPS-002, OPS-003, OPS-004, OPS-005 | 15 | `DeadLetter`, `RequeueResult`, `IDeadLetterStore<T>.Get/Requeue/Discard`, public EF DeadLetterStore; `IDurableStore<T>.Cleanup`; `MessageMetrics.Completed/Retried/DeadLettered/LeaseLost`. Manager collection semantics and replay are specified in inbox/outbox. |
-| [MQTT ingress and dispatch](mqtt.md) | MQTT-001, MQTT-002, MQTT-003, MQTT-004, MQTT-005, MQTT-006, MQTT-007, MQTT-008, MQTT-009, MQTT-010, MQTT-011, MQTT-012, MQTT-013, MQTT-014, MQTT-015 | 53 | `Clean.Messaging.Inbox.Ingress.Mqtt` and `Clean.Messaging.Outbox.Dispatch.Mqtt`, with their provider-neutral mapping and durable admission/completion dependencies. Shared mapping contracts are specified in [Transport](transport.md). |
-| [Outbox behavioural specifications](outbox.md) | OUTBOX-001, OUTBOX-002, OUTBOX-003, OUTBOX-004, OUTBOX-005, OUTBOX-006, OUTBOX-007, OUTBOX-008, OUTBOX-009, OUTBOX-010, OUTBOX-011, OUTBOX-012, OUTBOX-013, OUTBOX-014, OUTBOX-015, OUTBOX-016, OUTBOX-017, OUTBOX-018 | 58 | `IOutbox.Enqueue`, `OutboxMessage<T>`, `OutboxBatch`, `OutboxEntry`, `OutboxEnvelope`, target providers, store/writer/delivery/transport/manager ports, `ISaveCapture`, save/transaction interceptors, `OutboxOptions`; registration/model overloads. |
-| [Persistence and transaction consistency](persistence.md) | PERSIST-001, PERSIST-002, PERSIST-003, PERSIST-004 | 10 | `IDurableEntry`, `IDurableStore<T>`, `OwnedEntry<T>`, public `DurableStore<TContext,TEntry>` operations/protected provider extension boundary, `DurableEntryConfiguration.Configure`; model/transaction helpers and store variants in capability pages. |
-| [Worker lifecycle, signaling and recovery](recovery-lifecycle.md) | WORK-001, WORK-002, WORK-003, WORK-004 | 14 | `IWorkSignal.WaitAsync/Wake`, `AsyncAutoResetEvent.WaitAsync/Set`, `IWorkProcessor<T>.Process`, `WorkLoop<T>.Run`, `WorkLoopOptions.Validate`; feature processing/recovery/cleanup hosted-service contracts are in capability pages. |
-| [Retry policy and failure classification](retry-failures.md) | RETRY-001, RETRY-002, RETRY-003, RETRY-004, RETRY-005, RETRY-006 | 19 | `MessageException` (Code, Action, IsTransient, inner exception), `FailureAction`, `MessageFailureFactory.Create`, `MessageFailure`, `FailureCategory`, `RetryOptions`, `RetryBackoff`, `RetryPolicy.Evaluate`, `RetryResult.Fault/After`. |
-| [Saga behavioural specifications](sagas.md) | SAGA-001, SAGA-002, SAGA-003, SAGA-004, SAGA-005, SAGA-006, SAGA-007, SAGA-008, SAGA-009, SAGA-010, SAGA-011, SAGA-012, SAGA-013, SAGA-014, SAGA-015, SAGA-016, SAGA-017 | 85 | `SagaBuilder` definition and `On` overloads, `ISagaHandler`, `SagaContext.Send/Schedule/Cancel`, `SagaResult`, IDs/keys/snapshots/timers/exceptions, store/executor/manager and conflict ports, `SagaOptions`; runtime/EF registrations. |
-| [Scheduling behavioural specifications](scheduling.md) | SCHED-001, SCHED-002, SCHED-003, SCHED-004, SCHED-005, SCHED-006, SCHED-007, SCHED-008, SCHED-009, SCHED-010, SCHED-011, SCHED-012, SCHED-013, SCHED-014, SCHED-015, SCHED-016 | 80 | `IMessageScheduler`, `IScheduleWriter`, `IScheduleStore`, `IScheduleExecutor`, `IScheduleDelivery`, wake/signal ports, schedule IDs/target/dispatch/status, `SchedulingOptions`; runtime/EF/outbox/Quartz registrations. |
-| [Transport mapping](transport.md) | TRANSPORT-001, TRANSPORT-002, TRANSPORT-003, TRANSPORT-004, TRANSPORT-005, TRANSPORT-006, TRANSPORT-007, TRANSPORT-008 | 29 | `Clean.Messaging.Transport`, `Clean.Messaging.Inbox.Ingress`, and `Clean.Messaging.Outbox.Dispatch`; durable inbox/outbox dependencies only at their admission and external-completion boundaries. MQTT-specific contracts are in [MQTT](mqtt.md). |
+### [Configuration, validation and host composition](configuration/README.md)
 
-## Requirement catalogue
-| Specification | Capability | Classification | Criteria | Open decisions |
-| --- | --- | --- | --- | --- |
-| [CLAIM-001 — Claim eligibility and attempt accounting](claims-leases.md#claim-001--claim-eligibility-and-attempt-accounting) | [claims-leases.md](claims-leases.md) | Observed behaviour | 5 |  |
-| [CLAIM-002 — Stale settlement rejection](claims-leases.md#claim-002--stale-settlement-rejection) | [claims-leases.md](claims-leases.md) | Required behaviour | 3 |  |
-| [CLAIM-003 — Owned-state and expiry predicates](claims-leases.md#claim-003--owned-state-and-expiry-predicates) | [claims-leases.md](claims-leases.md) | Observed behaviour | 4 |  |
-| [CLAIM-004 — Renewal loss and cooperative cancellation](claims-leases.md#claim-004--renewal-loss-and-cooperative-cancellation) | [claims-leases.md](claims-leases.md) | Required behaviour | 4 |  |
-| [CLAIM-005 — Lease arithmetic and caller invariants](claims-leases.md#claim-005--lease-arithmetic-and-caller-invariants) | [claims-leases.md](claims-leases.md) | Unknown behaviour | 0 | [GAP-CORE-004](GAPS.md#gap-core-004) |
-| [CONFIG-001 — Host ownership and resource lifetimes](configuration.md#config-001--host-ownership-and-resource-lifetimes) | [configuration.md](configuration.md) | Required behaviour | 3 | [GAP-DUR-005](GAPS.md#gap-dur-005) |
-| [CONFIG-002 — Core defaults and override preservation](configuration.md#config-002--core-defaults-and-override-preservation) | [configuration.md](configuration.md) | Observed behaviour | 4 | [GAP-CORE-009](GAPS.md#gap-core-009) |
-| [CONFIG-003 — Registration identifier boundaries](configuration.md#config-003--registration-identifier-boundaries) | [configuration.md](configuration.md) | Observed behaviour | 3 |  |
-| [CONFIG-004 — Startup validation and configuration binding](configuration.md#config-004--startup-validation-and-configuration-binding) | [configuration.md](configuration.md) | Observed behaviour | 6 |  |
-| [CONFIG-005 — One messaging persistence context type](configuration.md#config-005--one-messaging-persistence-context-type) | [configuration.md](configuration.md) | Observed behaviour | 2 |  |
-| [CONFIG-006 — Complete boundary validation](configuration.md#config-006--complete-boundary-validation) | [configuration.md](configuration.md) | Proposed behaviour | 2 | [GAP-CORE-003](GAPS.md#gap-core-003) |
-| [CORE-001 — Stable explicit contracts](core-contracts.md#core-001--stable-explicit-contracts) | [core-contracts.md](core-contracts.md) | Required behaviour | 2 |  |
-| [CORE-002 — Registry uniqueness and selection](core-contracts.md#core-002--registry-uniqueness-and-selection) | [core-contracts.md](core-contracts.md) | Observed behaviour | 5 |  |
-| [CORE-003 — Lookup and dispatch failures](core-contracts.md#core-003--lookup-and-dispatch-failures) | [core-contracts.md](core-contracts.md) | Observed behaviour | 5 | [GAP-CORE-008](GAPS.md#gap-core-008) |
-| [CORE-004 — Durable JSON representation](core-contracts.md#core-004--durable-json-representation) | [core-contracts.md](core-contracts.md) | Observed behaviour | 6 | [GAP-CORE-008](GAPS.md#gap-core-008), [GAP-CORE-009](GAPS.md#gap-core-009) |
-| [CORE-005 — Direct public contract input validation](core-contracts.md#core-005--direct-public-contract-input-validation) | [core-contracts.md](core-contracts.md) | Unknown behaviour | 0 | [GAP-CORE-001](GAPS.md#gap-core-001), [GAP-CORE-008](GAPS.md#gap-core-008) |
-| [DOMAIN-001 — Raise pending events without owning business policy](domain-events.md#domain-001--raise-pending-events-without-owning-business-policy) | [domain-events.md](domain-events.md) | Observed behaviour | 3 |  |
-| [DOMAIN-002 — Acknowledgement removes pending facts by identity](domain-events.md#domain-002--acknowledgement-removes-pending-facts-by-identity) | [domain-events.md](domain-events.md) | Observed behaviour | 2 |  |
-| [DOMAIN-003 — Opt-in EF capture composition](domain-events.md#domain-003--opt-in-ef-capture-composition) | [domain-events.md](domain-events.md) | Observed behaviour | 2 |  |
-| [DOMAIN-004 — Capture tracked sources across entity states](domain-events.md#domain-004--capture-tracked-sources-across-entity-states) | [domain-events.md](domain-events.md) | Observed behaviour | 4 | [GAP-DUR-010](GAPS.md#gap-dur-010) |
-| [DOMAIN-005 — Atomic captured facts and application commit](domain-events.md#domain-005--atomic-captured-facts-and-application-commit) | [domain-events.md](domain-events.md) | Required behaviour | 3 |  |
-| [DOMAIN-006 — Defer acknowledgement and deduplicate multi-save capture](domain-events.md#domain-006--defer-acknowledgement-and-deduplicate-multi-save-capture) | [domain-events.md](domain-events.md) | Observed behaviour | 3 |  |
-| [DOMAIN-007 — Invalid custom facts and targetless acknowledgement](domain-events.md#domain-007--invalid-custom-facts-and-targetless-acknowledgement) | [domain-events.md](domain-events.md) | Observed behaviour | 3 | [GAP-DUR-006](GAPS.md#gap-dur-006), [GAP-DUR-008](GAPS.md#gap-dur-008), [GAP-DUR-011](GAPS.md#gap-dur-011) |
-| [DOMAIN-008 — Custom source collisions and acknowledgement failures](domain-events.md#domain-008--custom-source-collisions-and-acknowledgement-failures) | [domain-events.md](domain-events.md) | Observed behaviour | 4 | [GAP-DUR-009](GAPS.md#gap-dur-009), [GAP-DUR-010](GAPS.md#gap-dur-010) |
-| [DOMAIN-009 — Crash, recovery and retention boundaries](domain-events.md#domain-009--crash-recovery-and-retention-boundaries) | [domain-events.md](domain-events.md) | Observed behaviour | 3 | [GAP-DUR-008](GAPS.md#gap-dur-008) |
-| [DOMAIN-010 — Undecided source and acknowledgement contract](domain-events.md#domain-010--undecided-source-and-acknowledgement-contract) | [domain-events.md](domain-events.md) | Unknown behaviour | 0 | [GAP-DUR-009](GAPS.md#gap-dur-009), [GAP-DUR-010](GAPS.md#gap-dur-010), [GAP-DUR-011](GAPS.md#gap-dur-011) |
-| [IDENTITY-001 — Stable identity across durable retries](identity-context.md#identity-001--stable-identity-across-durable-retries) | [identity-context.md](identity-context.md) | Required behaviour | 2 |  |
-| [IDENTITY-002 — Relationship metadata is not deduplication](identity-context.md#identity-002--relationship-metadata-is-not-deduplication) | [identity-context.md](identity-context.md) | Required behaviour | 2 |  |
-| [IDENTITY-003 — Execution-local context scope](identity-context.md#identity-003--execution-local-context-scope) | [identity-context.md](identity-context.md) | Observed behaviour | 6 |  |
-| [IDENTITY-004 — Opaque claim token representation](identity-context.md#identity-004--opaque-claim-token-representation) | [identity-context.md](identity-context.md) | Observed behaviour | 1 |  |
-| [IDENTITY-005 — Scope misuse and child-flow lifetime](identity-context.md#identity-005--scope-misuse-and-child-flow-lifetime) | [identity-context.md](identity-context.md) | Unknown behaviour | 0 | [GAP-CORE-002](GAPS.md#gap-core-002) |
-| [INBOX-001 — Typed admission and envelope identity](inbox.md#inbox-001--typed-admission-and-envelope-identity) | [inbox.md](inbox.md) | Observed behaviour | 5 | [GAP-DUR-001](GAPS.md#gap-dur-001) |
-| [INBOX-002 — Independent atomic admission and duplicate retention](inbox.md#inbox-002--independent-atomic-admission-and-duplicate-retention) | [inbox.md](inbox.md) | Observed behaviour | 5 | [GAP-DUR-004](GAPS.md#gap-dur-004) |
-| [INBOX-003 — Empty admission boundary](inbox.md#inbox-003--empty-admission-boundary) | [inbox.md](inbox.md) | Observed behaviour | 2 | [GAP-DUR-001](GAPS.md#gap-dur-001) |
-| [INBOX-004 — Durable entry state and fenced claims](inbox.md#inbox-004--durable-entry-state-and-fenced-claims) | [inbox.md](inbox.md) | Observed behaviour | 4 |  |
-| [INBOX-005 — Atomic local delivery and repeatable execution](inbox.md#inbox-005--atomic-local-delivery-and-repeatable-execution) | [inbox.md](inbox.md) | Required behaviour | 4 |  |
-| [INBOX-006 — Processor metadata, failure settlement and cancellation](inbox.md#inbox-006--processor-metadata-failure-settlement-and-cancellation) | [inbox.md](inbox.md) | Observed behaviour | 5 |  |
-| [INBOX-007 — Signals, workers and restart recovery](inbox.md#inbox-007--signals-workers-and-restart-recovery) | [inbox.md](inbox.md) | Observed behaviour | 3 |  |
-| [INBOX-008 — Dead-letter inspection and independent management](inbox.md#inbox-008--dead-letter-inspection-and-independent-management) | [inbox.md](inbox.md) | Observed behaviour | 5 |  |
-| [INBOX-009 — Replay retained admissions into missing targets](inbox.md#inbox-009--replay-retained-admissions-into-missing-targets) | [inbox.md](inbox.md) | Observed behaviour | 7 | [GAP-DUR-002](GAPS.md#gap-dur-002), [GAP-DUR-003](GAPS.md#gap-dur-003) |
-| [INBOX-010 — Entry cleanup and indefinite admission retention](inbox.md#inbox-010--entry-cleanup-and-indefinite-admission-retention) | [inbox.md](inbox.md) | Observed behaviour | 3 | [GAP-DUR-004](GAPS.md#gap-dur-004) |
-| [INBOX-011 — Composition, mappings and public options](inbox.md#inbox-011--composition-mappings-and-public-options) | [inbox.md](inbox.md) | Observed behaviour | 3 |  |
-| [INBOX-012 — Scoped cleanup composition requirement and current mismatch](inbox.md#inbox-012--scoped-cleanup-composition-requirement-and-current-mismatch) | [inbox.md](inbox.md) | Required behaviour | 1 | [GAP-DUR-005](GAPS.md#gap-dur-005) |
-| [INBOX-013 — Replay failure transparency requirement](inbox.md#inbox-013--replay-failure-transparency-requirement) | [inbox.md](inbox.md) | Required behaviour | 1 | [GAP-DUR-003](GAPS.md#gap-dur-003) |
-| [INBOX-014 — Undecided admission and replay policies](inbox.md#inbox-014--undecided-admission-and-replay-policies) | [inbox.md](inbox.md) | Unknown behaviour | 0 | [GAP-DUR-001](GAPS.md#gap-dur-001), [GAP-DUR-002](GAPS.md#gap-dur-002), [GAP-DUR-003](GAPS.md#gap-dur-003), [GAP-DUR-004](GAPS.md#gap-dur-004) |
-| [INBOX-015 — Unapproved replay failure improvement](inbox.md#inbox-015--unapproved-replay-failure-improvement) | [inbox.md](inbox.md) | Proposed behaviour | 1 | [GAP-DUR-003](GAPS.md#gap-dur-003) |
-| [OPS-001 — Dead-letter listing and transitions](management-observability.md#ops-001--dead-letter-listing-and-transitions) | [management-observability.md](management-observability.md) | Observed behaviour | 5 | [GAP-CORE-010](GAPS.md#gap-core-010) |
-| [OPS-002 — Identity-preserving management](management-observability.md#ops-002--identity-preserving-management) | [management-observability.md](management-observability.md) | Required behaviour | 1 |  |
-| [OPS-003 — Terminal cleanup boundaries](management-observability.md#ops-003--terminal-cleanup-boundaries) | [management-observability.md](management-observability.md) | Observed behaviour | 5 |  |
-| [OPS-004 — Observable metric boundary](management-observability.md#ops-004--observable-metric-boundary) | [management-observability.md](management-observability.md) | Observed behaviour | 4 |  |
-| [OPS-005 — Settlement log attribution](management-observability.md#ops-005--settlement-log-attribution) | [management-observability.md](management-observability.md) | Unknown behaviour | 0 | [GAP-CORE-007](GAPS.md#gap-core-007) |
-| [MQTT-001 — Registration and public fluent routes](mqtt.md#mqtt-001--registration-and-public-fluent-routes) | [mqtt.md](mqtt.md) | Observed behaviour | 3 | [GAP-TX-001](GAPS.md#gap-tx-001), [GAP-TX-008](GAPS.md#gap-tx-008) |
-| [MQTT-002 — Startup options and MQTT connection configuration](mqtt.md#mqtt-002--startup-options-and-mqtt-connection-configuration) | [mqtt.md](mqtt.md) | Observed behaviour | 4 |  |
-| [MQTT-003 — Incoming filters choose exactly one route](mqtt.md#mqtt-003--incoming-filters-choose-exactly-one-route) | [mqtt.md](mqtt.md) | Observed behaviour | 4 |  |
-| [MQTT-004 — Incoming metadata, serialization and contract compatibility](mqtt.md#mqtt-004--incoming-metadata-serialization-and-contract-compatibility) | [mqtt.md](mqtt.md) | Observed behaviour | 5 | [GAP-TX-004](GAPS.md#gap-tx-004) |
-| [MQTT-005 — Acknowledgement follows admission, not consumer effects](mqtt.md#mqtt-005--acknowledgement-follows-admission-not-consumer-effects) | [mqtt.md](mqtt.md) | Required behaviour | 4 |  |
-| [MQTT-006 — Receive failures, poison acknowledgement and shutdown](mqtt.md#mqtt-006--receive-failures-poison-acknowledgement-and-shutdown) | [mqtt.md](mqtt.md) | Observed behaviour | 4 | [GAP-TX-002](GAPS.md#gap-tx-002) |
-| [MQTT-007 — Reset-on-start public session contract](mqtt.md#mqtt-007--reset-on-start-public-session-contract) | [mqtt.md](mqtt.md) | Required behaviour | 2 |  |
-| [MQTT-008 — Inbox reconnect, subscription results and cleanup](mqtt.md#mqtt-008--inbox-reconnect-subscription-results-and-cleanup) | [mqtt.md](mqtt.md) | Observed behaviour | 4 | [GAP-TX-009](GAPS.md#gap-tx-009) |
-| [MQTT-009 — Outgoing target and destination staging](mqtt.md#mqtt-009--outgoing-target-and-destination-staging) | [mqtt.md](mqtt.md) | Observed behaviour | 5 | [GAP-TX-003](GAPS.md#gap-tx-003) |
-| [MQTT-010 — Outgoing packet metadata and retain semantics](mqtt.md#mqtt-010--outgoing-packet-metadata-and-retain-semantics) | [mqtt.md](mqtt.md) | Observed behaviour | 4 | [GAP-TX-004](GAPS.md#gap-tx-004), [GAP-TX-005](GAPS.md#gap-tx-005) |
-| [MQTT-011 — Outgoing connection ownership, concurrency and disposal](mqtt.md#mqtt-011--outgoing-connection-ownership-concurrency-and-disposal) | [mqtt.md](mqtt.md) | Observed behaviour | 4 | [GAP-TX-006](GAPS.md#gap-tx-006) |
-| [MQTT-012 — Publish result, durable completion and failure classification](mqtt.md#mqtt-012--publish-result-durable-completion-and-failure-classification) | [mqtt.md](mqtt.md) | Observed behaviour | 4 |  |
-| [MQTT-013 — External repeat, cancellation and independently successful targets](mqtt.md#mqtt-013--external-repeat-cancellation-and-independently-successful-targets) | [mqtt.md](mqtt.md) | Required behaviour | 4 |  |
-| [MQTT-014 — Observable logs do not overstate settlement](mqtt.md#mqtt-014--observable-logs-do-not-overstate-settlement) | [mqtt.md](mqtt.md) | Observed behaviour | 2 | [GAP-TX-007](GAPS.md#gap-tx-007) |
-| [MQTT-015 — Pending interoperability and lifecycle policies](mqtt.md#mqtt-015--pending-interoperability-and-lifecycle-policies) | [mqtt.md](mqtt.md) | Unknown behaviour | 0 | [GAP-TX-001](GAPS.md#gap-tx-001), [GAP-TX-003](GAPS.md#gap-tx-003), [GAP-TX-005](GAPS.md#gap-tx-005), [GAP-TX-006](GAPS.md#gap-tx-006), [GAP-TX-008](GAPS.md#gap-tx-008), [GAP-TX-009](GAPS.md#gap-tx-009) |
-| [OUTBOX-001 — Enqueue stages a concrete envelope and target snapshot](outbox.md#outbox-001--enqueue-stages-a-concrete-envelope-and-target-snapshot) | [outbox.md](outbox.md) | Observed behaviour | 4 |  |
-| [OUTBOX-002 — Ambient outgoing metadata and representation members](outbox.md#outbox-002--ambient-outgoing-metadata-and-representation-members) | [outbox.md](outbox.md) | Observed behaviour | 2 |  |
-| [OUTBOX-003 — Target validation, local selection and empty batches](outbox.md#outbox-003--target-validation-local-selection-and-empty-batches) | [outbox.md](outbox.md) | Observed behaviour | 4 | [GAP-DUR-006](GAPS.md#gap-dur-006) |
-| [OUTBOX-004 — Tracked duplicate suppression versus persisted uniqueness](outbox.md#outbox-004--tracked-duplicate-suppression-versus-persisted-uniqueness) | [outbox.md](outbox.md) | Observed behaviour | 3 | [GAP-DUR-007](GAPS.md#gap-dur-007) |
-| [OUTBOX-005 — Atomic owning save and commit boundary](outbox.md#outbox-005--atomic-owning-save-and-commit-boundary) | [outbox.md](outbox.md) | Required behaviour | 3 |  |
-| [OUTBOX-006 — Public save capture protocol and per-context deduplication](outbox.md#outbox-006--public-save-capture-protocol-and-per-context-deduplication) | [outbox.md](outbox.md) | Observed behaviour | 4 |  |
-| [OUTBOX-007 — Save failure, cancellation, rollback and retry tracking](outbox.md#outbox-007--save-failure-cancellation-rollback-and-retry-tracking) | [outbox.md](outbox.md) | Observed behaviour | 3 |  |
-| [OUTBOX-008 — Commit verification and uncertain outcome](outbox.md#outbox-008--commit-verification-and-uncertain-outcome) | [outbox.md](outbox.md) | Observed behaviour | 4 | [GAP-DUR-008](GAPS.md#gap-dur-008) |
-| [OUTBOX-009 — Savepoints, ambient transactions and observer restrictions](outbox.md#outbox-009--savepoints-ambient-transactions-and-observer-restrictions) | [outbox.md](outbox.md) | Observed behaviour | 3 |  |
-| [OUTBOX-010 — Postcommit callbacks and wake hints](outbox.md#outbox-010--postcommit-callbacks-and-wake-hints) | [outbox.md](outbox.md) | Observed behaviour | 4 | [GAP-DUR-009](GAPS.md#gap-dur-009) |
-| [OUTBOX-011 — Transport dispatch and external repeat window](outbox.md#outbox-011--transport-dispatch-and-external-repeat-window) | [outbox.md](outbox.md) | Required behaviour | 3 |  |
-| [OUTBOX-012 — Delivery registration and local atomic dispatch](outbox.md#outbox-012--delivery-registration-and-local-atomic-dispatch) | [outbox.md](outbox.md) | Observed behaviour | 4 |  |
-| [OUTBOX-013 — Owned durable state, processor policy and cancellation](outbox.md#outbox-013--owned-durable-state-processor-policy-and-cancellation) | [outbox.md](outbox.md) | Observed behaviour | 5 |  |
-| [OUTBOX-014 — Workers, signals, bounded queue and recovery](outbox.md#outbox-014--workers-signals-bounded-queue-and-recovery) | [outbox.md](outbox.md) | Observed behaviour | 3 |  |
-| [OUTBOX-015 — Dead-letter management and cleanup horizon](outbox.md#outbox-015--dead-letter-management-and-cleanup-horizon) | [outbox.md](outbox.md) | Observed behaviour | 5 |  |
-| [OUTBOX-016 — EF composition, mappings, options and validation](outbox.md#outbox-016--ef-composition-mappings-options-and-validation) | [outbox.md](outbox.md) | Observed behaviour | 3 |  |
-| [OUTBOX-017 — Scoped cleanup lifetime requirement](outbox.md#outbox-017--scoped-cleanup-lifetime-requirement) | [outbox.md](outbox.md) | Required behaviour | 1 | [GAP-DUR-005](GAPS.md#gap-dur-005) |
-| [OUTBOX-018 — Undecided duplicate, commit and callback policies](outbox.md#outbox-018--undecided-duplicate-commit-and-callback-policies) | [outbox.md](outbox.md) | Unknown behaviour | 0 | [GAP-DUR-006](GAPS.md#gap-dur-006), [GAP-DUR-007](GAPS.md#gap-dur-007), [GAP-DUR-008](GAPS.md#gap-dur-008), [GAP-DUR-009](GAPS.md#gap-dur-009), [GAP-DUR-011](GAPS.md#gap-dur-011) |
-| [PERSIST-001 — Retained logical target uniqueness](persistence.md#persist-001--retained-logical-target-uniqueness) | [persistence.md](persistence.md) | Required behaviour | 3 |  |
-| [PERSIST-002 — Local completion atomicity](persistence.md#persist-002--local-completion-atomicity) | [persistence.md](persistence.md) | Required behaviour | 4 |  |
-| [PERSIST-003 — Store cancellation and invalid claim boundaries](persistence.md#persist-003--store-cancellation-and-invalid-claim-boundaries) | [persistence.md](persistence.md) | Observed behaviour | 3 | [GAP-CORE-004](GAPS.md#gap-core-004) |
-| [PERSIST-004 — Commit ambiguity and provider verification](persistence.md#persist-004--commit-ambiguity-and-provider-verification) | [persistence.md](persistence.md) | Unknown behaviour | 0 | [GAP-CORE-005](GAPS.md#gap-core-005) |
-| [WORK-001 — Durability independent of wake hints](recovery-lifecycle.md#work-001--durability-independent-of-wake-hints) | [recovery-lifecycle.md](recovery-lifecycle.md) | Required behaviour | 2 |  |
-| [WORK-002 — Signal observation and cancellation](recovery-lifecycle.md#work-002--signal-observation-and-cancellation) | [recovery-lifecycle.md](recovery-lifecycle.md) | Observed behaviour | 4 |  |
-| [WORK-003 — Bounded processing and failure recovery](recovery-lifecycle.md#work-003--bounded-processing-and-failure-recovery) | [recovery-lifecycle.md](recovery-lifecycle.md) | Required behaviour | 4 |  |
-| [WORK-004 — Queue, leases and producer delay](recovery-lifecycle.md#work-004--queue-leases-and-producer-delay) | [recovery-lifecycle.md](recovery-lifecycle.md) | Observed behaviour | 4 | [GAP-CORE-010](GAPS.md#gap-core-010) |
-| [RETRY-001 — Failure action and safe diagnostics](retry-failures.md#retry-001--failure-action-and-safe-diagnostics) | [retry-failures.md](retry-failures.md) | Required behaviour | 2 |  |
-| [RETRY-002 — Failure snapshot values and bounds](retry-failures.md#retry-002--failure-snapshot-values-and-bounds) | [retry-failures.md](retry-failures.md) | Observed behaviour | 4 |  |
-| [RETRY-003 — Failure-retry budget](retry-failures.md#retry-003--failure-retry-budget) | [retry-failures.md](retry-failures.md) | Observed behaviour | 4 |  |
-| [RETRY-004 — Backoff and jitter boundaries](retry-failures.md#retry-004--backoff-and-jitter-boundaries) | [retry-failures.md](retry-failures.md) | Observed behaviour | 5 | [GAP-CORE-009](GAPS.md#gap-core-009) |
-| [RETRY-005 — Processing settlement boundary](retry-failures.md#retry-005--processing-settlement-boundary) | [retry-failures.md](retry-failures.md) | Required behaviour | 4 |  |
-| [RETRY-006 — Out-of-domain public policy inputs](retry-failures.md#retry-006--out-of-domain-public-policy-inputs) | [retry-failures.md](retry-failures.md) | Unknown behaviour | 0 | [GAP-CORE-003](GAPS.md#gap-core-003), [GAP-CORE-006](GAPS.md#gap-core-006) |
-| [SAGA-001 — Workflow identity and local outgoing consistency](sagas.md#saga-001--workflow-identity-and-local-outgoing-consistency) | [sagas.md](sagas.md) | Required behaviour | 4 |  |
-| [SAGA-002 — Definitions, handler overloads and registration validation](sagas.md#saga-002--definitions-handler-overloads-and-registration-validation) | [sagas.md](sagas.md) | Observed behaviour | 6 |  |
-| [SAGA-003 — Composition, persistence mapping and saga options](sagas.md#saga-003--composition-persistence-mapping-and-saga-options) | [sagas.md](sagas.md) | Observed behaviour | 4 | [GAP-WF-013](GAPS.md#gap-wf-013) |
-| [SAGA-004 — Identity values and durable correlation](sagas.md#saga-004--identity-values-and-durable-correlation) | [sagas.md](sagas.md) | Observed behaviour | 5 | [GAP-WF-001](GAPS.md#gap-wf-001), [GAP-WF-007](GAPS.md#gap-wf-007), [GAP-WF-011](GAPS.md#gap-wf-011) |
-| [SAGA-005 — Start, continuation and duplicate routing matrix](sagas.md#saga-005--start-continuation-and-duplicate-routing-matrix) | [sagas.md](sagas.md) | Observed behaviour | 8 | [GAP-WF-012](GAPS.md#gap-wf-012) |
-| [SAGA-006 — Handler results and immutable effect descriptions](sagas.md#saga-006--handler-results-and-immutable-effect-descriptions) | [sagas.md](sagas.md) | Observed behaviour | 7 | [GAP-WF-008](GAPS.md#gap-wf-008) |
-| [SAGA-007 — State serialization and retained schema compatibility](sagas.md#saga-007--state-serialization-and-retained-schema-compatibility) | [sagas.md](sagas.md) | Observed behaviour | 4 | [GAP-WF-015](GAPS.md#gap-wf-015) |
-| [SAGA-008 — State application and terminal invariants](sagas.md#saga-008--state-application-and-terminal-invariants) | [sagas.md](sagas.md) | Observed behaviour | 4 |  |
-| [SAGA-009 — Outgoing metadata, timers and terminal effect ordering](sagas.md#saga-009--outgoing-metadata-timers-and-terminal-effect-ordering) | [sagas.md](sagas.md) | Observed behaviour | 7 |  |
-| [SAGA-010 — Timer delivery, business failure and exhaustion](sagas.md#saga-010--timer-delivery-business-failure-and-exhaustion) | [sagas.md](sagas.md) | Observed behaviour | 7 |  |
-| [SAGA-011 — Owner transactions, rollback, savepoints and replay](sagas.md#saga-011--owner-transactions-rollback-savepoints-and-replay) | [sagas.md](sagas.md) | Observed behaviour | 6 | [GAP-WF-006](GAPS.md#gap-wf-006) |
-| [SAGA-012 — State version races and concurrent continuation](sagas.md#saga-012--state-version-races-and-concurrent-continuation) | [sagas.md](sagas.md) | Observed behaviour | 5 |  |
-| [SAGA-013 — Start collision translation and recovery outcomes](sagas.md#saga-013--start-collision-translation-and-recovery-outcomes) | [sagas.md](sagas.md) | Observed behaviour | 6 | [GAP-WF-009](GAPS.md#gap-wf-009), [GAP-WF-010](GAPS.md#gap-wf-010) |
-| [SAGA-014 — Failures, cancellation and malformed result intent](sagas.md#saga-014--failures-cancellation-and-malformed-result-intent) | [sagas.md](sagas.md) | Unknown behaviour | 0 | [GAP-WF-008](GAPS.md#gap-wf-008), [GAP-WF-010](GAPS.md#gap-wf-010) |
-| [SAGA-015 — Undecided identity, schema and diagnostic hardening](sagas.md#saga-015--undecided-identity-schema-and-diagnostic-hardening) | [sagas.md](sagas.md) | Proposed behaviour | 0 | [GAP-WF-001](GAPS.md#gap-wf-001), [GAP-WF-007](GAPS.md#gap-wf-007), [GAP-WF-008](GAPS.md#gap-wf-008), [GAP-WF-009](GAPS.md#gap-wf-009), [GAP-WF-012](GAPS.md#gap-wf-012), [GAP-WF-015](GAPS.md#gap-wf-015) |
-| [SAGA-016 — Persisted manager and timer snapshots](sagas.md#saga-016--persisted-manager-and-timer-snapshots) | [sagas.md](sagas.md) | Observed behaviour | 6 |  |
-| [SAGA-017 — Retained tombstones, purge boundaries and lifecycle limits](sagas.md#saga-017--retained-tombstones-purge-boundaries-and-lifecycle-limits) | [sagas.md](sagas.md) | Observed behaviour | 6 | [GAP-WF-011](GAPS.md#gap-wf-011) |
-| [SCHED-001 — Stable logical schedule identity](scheduling.md#sched-001--stable-logical-schedule-identity) | [scheduling.md](scheduling.md) | Required behaviour | 3 | [GAP-WF-002](GAPS.md#gap-wf-002) |
-| [SCHED-002 — Repeated delivery and external effects](scheduling.md#sched-002--repeated-delivery-and-external-effects) | [scheduling.md](scheduling.md) | Required behaviour | 3 |  |
-| [SCHED-003 — Input descriptions, serialization and UTC boundaries](scheduling.md#sched-003--input-descriptions-serialization-and-utc-boundaries) | [scheduling.md](scheduling.md) | Observed behaviour | 8 | [GAP-WF-001](GAPS.md#gap-wf-001) |
-| [SCHED-004 — Runtime, EF, outbox and model composition](scheduling.md#sched-004--runtime-ef-outbox-and-model-composition) | [scheduling.md](scheduling.md) | Observed behaviour | 6 |  |
-| [SCHED-005 — Options defaults, boundaries and binding](scheduling.md#sched-005--options-defaults-boundaries-and-binding) | [scheduling.md](scheduling.md) | Observed behaviour | 4 | [GAP-WF-013](GAPS.md#gap-wf-013) |
-| [SCHED-006 — Staging, duplicate insertion and owner visibility](scheduling.md#sched-006--staging-duplicate-insertion-and-owner-visibility) | [scheduling.md](scheduling.md) | Observed behaviour | 6 | [GAP-WF-002](GAPS.md#gap-wf-002), [GAP-WF-006](GAPS.md#gap-wf-006) |
-| [SCHED-007 — Cancellation filters, terminal states and races](scheduling.md#sched-007--cancellation-filters-terminal-states-and-races) | [scheduling.md](scheduling.md) | Observed behaviour | 7 |  |
-| [SCHED-008 — Persisted management snapshots](scheduling.md#sched-008--persisted-management-snapshots) | [scheduling.md](scheduling.md) | Observed behaviour | 4 |  |
-| [SCHED-009 — Due eligibility, claims and bounded execution](scheduling.md#sched-009--due-eligibility-claims-and-bounded-execution) | [scheduling.md](scheduling.md) | Observed behaviour | 7 | [GAP-WF-003](GAPS.md#gap-wf-003) |
-| [SCHED-010 — Expiry before admission and asymmetric settlement](scheduling.md#sched-010--expiry-before-admission-and-asymmetric-settlement) | [scheduling.md](scheduling.md) | Unknown behaviour | 0 | [GAP-WF-003](GAPS.md#gap-wf-003), [GAP-WF-004](GAPS.md#gap-wf-004) |
-| [SCHED-011 — Delivery transaction, routing and retained contract failures](scheduling.md#sched-011--delivery-transaction-routing-and-retained-contract-failures) | [scheduling.md](scheduling.md) | Observed behaviour | 6 | [GAP-WF-014](GAPS.md#gap-wf-014) |
-| [SCHED-012 — Failure budgets, diagnostics and cancellation recovery](scheduling.md#sched-012--failure-budgets-diagnostics-and-cancellation-recovery) | [scheduling.md](scheduling.md) | Observed behaviour | 8 | [GAP-WF-004](GAPS.md#gap-wf-004) |
-| [SCHED-013 — Local wake engine, commit hints and polling recovery](scheduling.md#sched-013--local-wake-engine-commit-hints-and-polling-recovery) | [scheduling.md](scheduling.md) | Observed behaviour | 7 | [GAP-WF-006](GAPS.md#gap-wf-006) |
-| [SCHED-014 — Quartz wake adapter, fallback, reconnect and shutdown](scheduling.md#sched-014--quartz-wake-adapter-fallback-reconnect-and-shutdown) | [scheduling.md](scheduling.md) | Observed behaviour | 6 | [GAP-WF-005](GAPS.md#gap-wf-005) |
-| [SCHED-015 — Undecided integration hardening](scheduling.md#sched-015--undecided-integration-hardening) | [scheduling.md](scheduling.md) | Proposed behaviour | 0 | [GAP-WF-001](GAPS.md#gap-wf-001), [GAP-WF-005](GAPS.md#gap-wf-005), [GAP-WF-006](GAPS.md#gap-wf-006), [GAP-WF-013](GAPS.md#gap-wf-013), [GAP-WF-014](GAPS.md#gap-wf-014) |
-| [SCHED-016 — Terminal retention, recovery boundaries and management limits](scheduling.md#sched-016--terminal-retention-recovery-boundaries-and-management-limits) | [scheduling.md](scheduling.md) | Observed behaviour | 5 |  |
-| [TRANSPORT-001 — Preserve representation and identity boundaries](transport.md#transport-001--preserve-representation-and-identity-boundaries) | [transport.md](transport.md) | Required behaviour | 3 |  |
-| [TRANSPORT-002 — Envelope and payload serialization surface](transport.md#transport-002--envelope-and-payload-serialization-surface) | [transport.md](transport.md) | Observed behaviour | 3 |  |
-| [TRANSPORT-003 — Registration and exact mapping resolution](transport.md#transport-003--registration-and-exact-mapping-resolution) | [transport.md](transport.md) | Observed behaviour | 4 | [GAP-TX-008](GAPS.md#gap-tx-008) |
-| [TRANSPORT-004 — Incoming typed admission and metadata loss boundary](transport.md#transport-004--incoming-typed-admission-and-metadata-loss-boundary) | [transport.md](transport.md) | Observed behaviour | 5 | [GAP-TX-004](GAPS.md#gap-tx-004) |
-| [TRANSPORT-005 — Admission failures, duplicates and cancellation](transport.md#transport-005--admission-failures-duplicates-and-cancellation) | [transport.md](transport.md) | Observed behaviour | 6 | [GAP-TX-002](GAPS.md#gap-tx-002) |
-| [TRANSPORT-006 — Outgoing payload construction and permanent mapping faults](transport.md#transport-006--outgoing-payload-construction-and-permanent-mapping-faults) | [transport.md](transport.md) | Observed behaviour | 4 | [GAP-TX-002](GAPS.md#gap-tx-002), [GAP-TX-004](GAPS.md#gap-tx-004) |
-| [TRANSPORT-007 — External publication and per-target completion are separate](transport.md#transport-007--external-publication-and-per-target-completion-are-separate) | [transport.md](transport.md) | Required behaviour | 4 |  |
-| [TRANSPORT-008 — Unapproved compatibility and synchronous cancellation decisions](transport.md#transport-008--unapproved-compatibility-and-synchronous-cancellation-decisions) | [transport.md](transport.md) | Unknown behaviour | 0 | [GAP-TX-002](GAPS.md#gap-tx-002), [GAP-TX-003](GAPS.md#gap-tx-003) |
+- [CONFIG-001 — Host ownership and resource lifetimes](configuration/CONFIG-001-host-ownership-and-resource-lifetimes.md)
+- [CONFIG-002 — Core defaults and override preservation](configuration/CONFIG-002-core-defaults-and-override-preservation.md)
+- [CONFIG-003 — Registration identifier boundaries](configuration/CONFIG-003-registration-identifier-boundaries.md)
+- [CONFIG-004 — Startup validation and configuration binding](configuration/CONFIG-004-startup-validation-and-configuration-binding.md)
+- [CONFIG-005 — One messaging persistence context type](configuration/CONFIG-005-one-messaging-persistence-context-type.md)
+- [CONFIG-006 — Complete boundary validation](configuration/CONFIG-006-complete-boundary-validation.md)
 
-## Review and future verification
-- [GAPS.md](GAPS.md): unresolved intent, suspected defects, documentation mismatches and approval-needed proposals.
-- [TRACEABILITY.md](TRACEABILITY.md): every requirement/acceptance ID and its capability verification-matrix location.
-- [INSPECTION.md](INSPECTION.md): all authored source/project files, public-surface review and linked behaviours.
-- Use the lowest credible verification level. Real relational integration is necessary for database uniqueness, atomicity, lease fencing and uncertain commits; EF InMemory cannot establish these guarantees. MQTT and Quartz claims require their applicable integrations.
-- No test-per-method or one-test-per-criterion constraint: observable scenarios can share fixture work and tests while preserving criterion IDs.
-- Cross-capability criteria intentionally exercise end-to-end boundaries. Generic claims/retries/management are owned by shared pages; capability pages specify admission/staging/schedule/saga-specific differences.
-- Unknown specifications have no decided acceptance criteria. These and explicit gaps prevent this draft from claiming that every public input combination or deployment has an established requirement.
+### [Core contracts and durable serialization](core-contracts/README.md)
 
-## Completion review highlights
+- [CORE-001 — Stable explicit contracts](core-contracts/CORE-001-stable-explicit-contracts.md)
+- [CORE-002 — Registry uniqueness and selection](core-contracts/CORE-002-registry-uniqueness-and-selection.md)
+- [CORE-003 — Lookup and dispatch failures](core-contracts/CORE-003-lookup-and-dispatch-failures.md)
+- [CORE-004 — Durable JSON representation](core-contracts/CORE-004-durable-json-representation.md)
+- [CORE-005 — Direct public contract input validation](core-contracts/CORE-005-direct-public-contract-input-validation.md)
 
-- Coverage: 20 projects, 250 authored files, 15 capability pages, 139 specification blocks and 504 acceptance criteria; all remain untested.
-- Open evidence: 45 gaps and 8 documentation/implementation discrepancies. No authored source file was left uninspected; provider, broker, Quartz and whole-host execution remain unverified.
-- Important discrepancies: replay target validation is overstated in Reference; replay can conceal unrelated database update errors; cleanup workers capture scoped stores; synchronous mapping and saga conflict lookup can alter cancellation classification; historical MQTT API/concurrency descriptions are stale; generic lease discussion must not be applied unchanged to scheduling. Full evidence is in [GAPS.md](GAPS.md#existing-documentation--implementation-contradictions).
-- Approval-needed proposals: complete boundary/startup validation (CONFIG-006); replay failure reconciliation (INBOX-015); schedule admission, bounded Quartz wake, savepoint/options/empty-target policy (SCHED-015); saga equality, diagnostics, collision, repeated-start and schema policy (SAGA-015). Questions within proposal blocks are not counted as executable acceptance criteria.
-- Other unresolved contracts: no-consumer admission/external-only staging, replay/dedup retention horizons, uncertain-commit attribution, optional MQTT empty-ID interoperability, metadata propagation and shutdown/concurrent disposal.
-- Next verification: real relational transaction/uniqueness/fencing/race fixtures; restart/partial-commit workflows; whole-host service-scope/interceptor checks; controllable MQTT packet/ack/session tests and Quartz I/O/recovery checks. No production fixes or tests were implemented.
+### [Domain events behavioural specifications](domain-events/README.md)
+
+- [DOMAIN-001 — Raise pending events without owning business policy](domain-events/DOMAIN-001-raise-pending-events-without-owning-business-policy.md)
+- [DOMAIN-002 — Acknowledgement removes pending facts by identity](domain-events/DOMAIN-002-acknowledgement-removes-pending-facts-by-identity.md)
+- [DOMAIN-003 — Opt-in EF capture composition](domain-events/DOMAIN-003-opt-in-ef-capture-composition.md)
+- [DOMAIN-004 — Capture tracked sources across entity states](domain-events/DOMAIN-004-capture-tracked-sources-across-entity-states.md)
+- [DOMAIN-005 — Atomic captured facts and application commit](domain-events/DOMAIN-005-atomic-captured-facts-and-application-commit.md)
+- [DOMAIN-006 — Defer acknowledgement and deduplicate multi-save capture](domain-events/DOMAIN-006-defer-acknowledgement-and-deduplicate-multi-save-capture.md)
+- [DOMAIN-007 — Invalid custom facts and targetless acknowledgement](domain-events/DOMAIN-007-invalid-custom-facts-and-targetless-acknowledgement.md)
+- [DOMAIN-008 — Custom source collisions and acknowledgement failures](domain-events/DOMAIN-008-custom-source-collisions-and-acknowledgement-failures.md)
+- [DOMAIN-009 — Crash, recovery and retention boundaries](domain-events/DOMAIN-009-crash-recovery-and-retention-boundaries.md)
+- [DOMAIN-010 — Undecided source and acknowledgement contract](domain-events/DOMAIN-010-undecided-source-and-acknowledgement-contract.md)
+
+### [Message identity and execution context](identity-context/README.md)
+
+- [IDENTITY-001 — Stable identity across durable retries](identity-context/IDENTITY-001-stable-identity-across-durable-retries.md)
+- [IDENTITY-002 — Relationship metadata is not deduplication](identity-context/IDENTITY-002-relationship-metadata-is-not-deduplication.md)
+- [IDENTITY-003 — Execution-local context scope](identity-context/IDENTITY-003-execution-local-context-scope.md)
+- [IDENTITY-004 — Opaque claim token representation](identity-context/IDENTITY-004-opaque-claim-token-representation.md)
+- [IDENTITY-005 — Scope misuse and child-flow lifetime](identity-context/IDENTITY-005-scope-misuse-and-child-flow-lifetime.md)
+
+### [Inbox behavioural specifications](inbox/README.md)
+
+- [INBOX-001 — Typed admission and envelope identity](inbox/INBOX-001-typed-admission-and-envelope-identity.md)
+- [INBOX-002 — Independent atomic admission and duplicate retention](inbox/INBOX-002-independent-atomic-admission-and-duplicate-retention.md)
+- [INBOX-003 — Empty admission boundary](inbox/INBOX-003-empty-admission-boundary.md)
+- [INBOX-004 — Durable entry state and fenced claims](inbox/INBOX-004-durable-entry-state-and-fenced-claims.md)
+- [INBOX-005 — Atomic local delivery and repeatable execution](inbox/INBOX-005-atomic-local-delivery-and-repeatable-execution.md)
+- [INBOX-006 — Processor metadata, failure settlement and cancellation](inbox/INBOX-006-processor-metadata-failure-settlement-and-cancellation.md)
+- [INBOX-007 — Signals, workers and restart recovery](inbox/INBOX-007-signals-workers-and-restart-recovery.md)
+- [INBOX-008 — Dead-letter inspection and independent management](inbox/INBOX-008-dead-letter-inspection-and-independent-management.md)
+- [INBOX-009 — Replay retained admissions into missing targets](inbox/INBOX-009-replay-retained-admissions-into-missing-targets.md)
+- [INBOX-010 — Entry cleanup and indefinite admission retention](inbox/INBOX-010-entry-cleanup-and-indefinite-admission-retention.md)
+- [INBOX-011 — Composition, mappings and public options](inbox/INBOX-011-composition-mappings-and-public-options.md)
+- [INBOX-012 — Scoped cleanup composition requirement and current mismatch](inbox/INBOX-012-scoped-cleanup-composition-requirement-and-current-mismatch.md)
+- [INBOX-013 — Replay failure transparency requirement](inbox/INBOX-013-replay-failure-transparency-requirement.md)
+- [INBOX-014 — Undecided admission and replay policies](inbox/INBOX-014-undecided-admission-and-replay-policies.md)
+- [INBOX-015 — Unapproved replay failure improvement](inbox/INBOX-015-unapproved-replay-failure-improvement.md)
+
+### [Dead letters, retention and observability](observability/README.md)
+
+- [OPS-001 — Dead-letter listing and transitions](observability/OPS-001-dead-letter-listing-and-transitions.md)
+- [OPS-002 — Identity-preserving management](observability/OPS-002-identity-preserving-management.md)
+- [OPS-003 — Terminal cleanup boundaries](observability/OPS-003-terminal-cleanup-boundaries.md)
+- [OPS-004 — Observable metric boundary](observability/OPS-004-observable-metric-boundary.md)
+- [OPS-005 — Settlement log attribution](observability/OPS-005-settlement-log-attribution.md)
+
+### [MQTT ingress and dispatch](mqtt/README.md)
+
+- [MQTT-001 — Registration and public fluent routes](mqtt/MQTT-001-registration-and-public-fluent-routes.md)
+- [MQTT-002 — Startup options and MQTT connection configuration](mqtt/MQTT-002-startup-options-and-mqtt-connection-configuration.md)
+- [MQTT-003 — Incoming filters choose exactly one route](mqtt/MQTT-003-incoming-filters-choose-exactly-one-route.md)
+- [MQTT-004 — Incoming metadata, serialization and contract compatibility](mqtt/MQTT-004-incoming-metadata-serialization-and-contract-compatibility.md)
+- [MQTT-005 — Acknowledgement follows admission, not consumer effects](mqtt/MQTT-005-acknowledgement-follows-admission-not-consumer-effects.md)
+- [MQTT-006 — Receive failures, poison acknowledgement and shutdown](mqtt/MQTT-006-receive-failures-poison-acknowledgement-and-shutdown.md)
+- [MQTT-007 — Reset-on-start public session contract](mqtt/MQTT-007-reset-on-start-public-session-contract.md)
+- [MQTT-008 — Inbox reconnect, subscription results and cleanup](mqtt/MQTT-008-inbox-reconnect-subscription-results-and-cleanup.md)
+- [MQTT-009 — Outgoing target and destination staging](mqtt/MQTT-009-outgoing-target-and-destination-staging.md)
+- [MQTT-010 — Outgoing packet metadata and retain semantics](mqtt/MQTT-010-outgoing-packet-metadata-and-retain-semantics.md)
+- [MQTT-011 — Outgoing connection ownership, concurrency and disposal](mqtt/MQTT-011-outgoing-connection-ownership-concurrency-and-disposal.md)
+- [MQTT-012 — Publish result, durable completion and failure classification](mqtt/MQTT-012-publish-result-durable-completion-and-failure-classification.md)
+- [MQTT-013 — External repeat, cancellation and independently successful targets](mqtt/MQTT-013-external-repeat-cancellation-and-independently-successful-targets.md)
+- [MQTT-014 — Observable logs do not overstate settlement](mqtt/MQTT-014-observable-logs-do-not-overstate-settlement.md)
+- [MQTT-015 — Pending interoperability and lifecycle policies](mqtt/MQTT-015-pending-interoperability-and-lifecycle-policies.md)
+
+### [Outbox behavioural specifications](outbox/README.md)
+
+- [OUTBOX-001 — Enqueue stages a concrete envelope and target snapshot](outbox/OUTBOX-001-enqueue-stages-a-concrete-envelope-and-target-snapshot.md)
+- [OUTBOX-002 — Ambient outgoing metadata and representation members](outbox/OUTBOX-002-ambient-outgoing-metadata-and-representation-members.md)
+- [OUTBOX-003 — Target validation, local selection and empty batches](outbox/OUTBOX-003-target-validation-local-selection-and-empty-batches.md)
+- [OUTBOX-004 — Tracked duplicate suppression versus persisted uniqueness](outbox/OUTBOX-004-tracked-duplicate-suppression-versus-persisted-uniqueness.md)
+- [OUTBOX-005 — Atomic owning save and commit boundary](outbox/OUTBOX-005-atomic-owning-save-and-commit-boundary.md)
+- [OUTBOX-006 — Public save capture protocol and per-context deduplication](outbox/OUTBOX-006-public-save-capture-protocol-and-per-context-deduplication.md)
+- [OUTBOX-007 — Save failure, cancellation, rollback and retry tracking](outbox/OUTBOX-007-save-failure-cancellation-rollback-and-retry-tracking.md)
+- [OUTBOX-008 — Commit verification and uncertain outcome](outbox/OUTBOX-008-commit-verification-and-uncertain-outcome.md)
+- [OUTBOX-009 — Savepoints, ambient transactions and observer restrictions](outbox/OUTBOX-009-savepoints-ambient-transactions-and-observer-restrictions.md)
+- [OUTBOX-010 — Postcommit callbacks and wake hints](outbox/OUTBOX-010-postcommit-callbacks-and-wake-hints.md)
+- [OUTBOX-011 — Transport dispatch and external repeat window](outbox/OUTBOX-011-transport-dispatch-and-external-repeat-window.md)
+- [OUTBOX-012 — Delivery registration and local atomic dispatch](outbox/OUTBOX-012-delivery-registration-and-local-atomic-dispatch.md)
+- [OUTBOX-013 — Owned durable state, processor policy and cancellation](outbox/OUTBOX-013-owned-durable-state-processor-policy-and-cancellation.md)
+- [OUTBOX-014 — Workers, signals, bounded queue and recovery](outbox/OUTBOX-014-workers-signals-bounded-queue-and-recovery.md)
+- [OUTBOX-015 — Dead-letter management and cleanup horizon](outbox/OUTBOX-015-dead-letter-management-and-cleanup-horizon.md)
+- [OUTBOX-016 — EF composition, mappings, options and validation](outbox/OUTBOX-016-ef-composition-mappings-options-and-validation.md)
+- [OUTBOX-017 — Scoped cleanup lifetime requirement](outbox/OUTBOX-017-scoped-cleanup-lifetime-requirement.md)
+- [OUTBOX-018 — Undecided duplicate, commit and callback policies](outbox/OUTBOX-018-undecided-duplicate-commit-and-callback-policies.md)
+
+### [Persistence and transaction consistency](persistence/README.md)
+
+- [PERSIST-001 — Retained logical target uniqueness](persistence/PERSIST-001-retained-logical-target-uniqueness.md)
+- [PERSIST-002 — Local completion atomicity](persistence/PERSIST-002-local-completion-atomicity.md)
+- [PERSIST-003 — Store cancellation and invalid claim boundaries](persistence/PERSIST-003-store-cancellation-and-invalid-claim-boundaries.md)
+- [PERSIST-004 — Commit ambiguity and provider verification](persistence/PERSIST-004-commit-ambiguity-and-provider-verification.md)
+
+### [Worker lifecycle, signaling and recovery](recovery-lifecycle/README.md)
+
+- [WORK-001 — Durability independent of wake hints](recovery-lifecycle/WORK-001-durability-independent-of-wake-hints.md)
+- [WORK-002 — Signal observation and cancellation](recovery-lifecycle/WORK-002-signal-observation-and-cancellation.md)
+- [WORK-003 — Bounded processing and failure recovery](recovery-lifecycle/WORK-003-bounded-processing-and-failure-recovery.md)
+- [WORK-004 — Queue, leases and producer delay](recovery-lifecycle/WORK-004-queue-leases-and-producer-delay.md)
+
+### [Retry policy and failure classification](retry-failures/README.md)
+
+- [RETRY-001 — Failure action and safe diagnostics](retry-failures/RETRY-001-failure-action-and-safe-diagnostics.md)
+- [RETRY-002 — Failure snapshot values and bounds](retry-failures/RETRY-002-failure-snapshot-values-and-bounds.md)
+- [RETRY-003 — Failure-retry budget](retry-failures/RETRY-003-failure-retry-budget.md)
+- [RETRY-004 — Backoff and jitter boundaries](retry-failures/RETRY-004-backoff-and-jitter-boundaries.md)
+- [RETRY-005 — Processing settlement boundary](retry-failures/RETRY-005-processing-settlement-boundary.md)
+- [RETRY-006 — Out-of-domain public policy inputs](retry-failures/RETRY-006-out-of-domain-public-policy-inputs.md)
+
+### [Saga behavioural specifications](sagas/README.md)
+
+- [SAGA-001 — Workflow identity and local outgoing consistency](sagas/SAGA-001-workflow-identity-and-local-outgoing-consistency.md)
+- [SAGA-002 — Definitions, handler overloads and registration validation](sagas/SAGA-002-definitions-handler-overloads-and-registration-validation.md)
+- [SAGA-003 — Composition, persistence mapping and saga options](sagas/SAGA-003-composition-persistence-mapping-and-saga-options.md)
+- [SAGA-004 — Identity values and durable correlation](sagas/SAGA-004-identity-values-and-durable-correlation.md)
+- [SAGA-005 — Start, continuation and duplicate routing matrix](sagas/SAGA-005-start-continuation-and-duplicate-routing-matrix.md)
+- [SAGA-006 — Handler results and immutable effect descriptions](sagas/SAGA-006-handler-results-and-immutable-effect-descriptions.md)
+- [SAGA-007 — State serialization and retained schema compatibility](sagas/SAGA-007-state-serialization-and-retained-schema-compatibility.md)
+- [SAGA-008 — State application and terminal invariants](sagas/SAGA-008-state-application-and-terminal-invariants.md)
+- [SAGA-009 — Outgoing metadata, timers and terminal effect ordering](sagas/SAGA-009-outgoing-metadata-timers-and-terminal-effect-ordering.md)
+- [SAGA-010 — Timer delivery, business failure and exhaustion](sagas/SAGA-010-timer-delivery-business-failure-and-exhaustion.md)
+- [SAGA-011 — Owner transactions, rollback, savepoints and replay](sagas/SAGA-011-owner-transactions-rollback-savepoints-and-replay.md)
+- [SAGA-012 — State version races and concurrent continuation](sagas/SAGA-012-state-version-races-and-concurrent-continuation.md)
+- [SAGA-013 — Start collision translation and recovery outcomes](sagas/SAGA-013-start-collision-translation-and-recovery-outcomes.md)
+- [SAGA-014 — Failures, cancellation and malformed result intent](sagas/SAGA-014-failures-cancellation-and-malformed-result-intent.md)
+- [SAGA-015 — Undecided identity, schema and diagnostic hardening](sagas/SAGA-015-undecided-identity-schema-and-diagnostic-hardening.md)
+- [SAGA-016 — Persisted manager and timer snapshots](sagas/SAGA-016-persisted-manager-and-timer-snapshots.md)
+- [SAGA-017 — Retained tombstones, purge boundaries and lifecycle limits](sagas/SAGA-017-retained-tombstones-purge-boundaries-and-lifecycle-limits.md)
+
+### [Scheduling behavioural specifications](scheduling/README.md)
+
+- [SCHED-001 — Stable logical schedule identity](scheduling/SCHED-001-stable-logical-schedule-identity.md)
+- [SCHED-002 — Repeated delivery and external effects](scheduling/SCHED-002-repeated-delivery-and-external-effects.md)
+- [SCHED-003 — Input descriptions, serialization and UTC boundaries](scheduling/SCHED-003-input-descriptions-serialization-and-utc-boundaries.md)
+- [SCHED-004 — Runtime, EF, outbox and model composition](scheduling/SCHED-004-runtime-ef-outbox-and-model-composition.md)
+- [SCHED-005 — Options defaults, boundaries and binding](scheduling/SCHED-005-options-defaults-boundaries-and-binding.md)
+- [SCHED-006 — Staging, duplicate insertion and owner visibility](scheduling/SCHED-006-staging-duplicate-insertion-and-owner-visibility.md)
+- [SCHED-007 — Cancellation filters, terminal states and races](scheduling/SCHED-007-cancellation-filters-terminal-states-and-races.md)
+- [SCHED-008 — Persisted management snapshots](scheduling/SCHED-008-persisted-management-snapshots.md)
+- [SCHED-009 — Due eligibility, claims and bounded execution](scheduling/SCHED-009-due-eligibility-claims-and-bounded-execution.md)
+- [SCHED-010 — Expiry before admission and asymmetric settlement](scheduling/SCHED-010-expiry-before-admission-and-asymmetric-settlement.md)
+- [SCHED-011 — Delivery transaction, routing and retained contract failures](scheduling/SCHED-011-delivery-transaction-routing-and-retained-contract-failures.md)
+- [SCHED-012 — Failure budgets, diagnostics and cancellation recovery](scheduling/SCHED-012-failure-budgets-diagnostics-and-cancellation-recovery.md)
+- [SCHED-013 — Local wake engine, commit hints and polling recovery](scheduling/SCHED-013-local-wake-engine-commit-hints-and-polling-recovery.md)
+- [SCHED-014 — Quartz wake adapter, fallback, reconnect and shutdown](scheduling/SCHED-014-quartz-wake-adapter-fallback-reconnect-and-shutdown.md)
+- [SCHED-015 — Undecided integration hardening](scheduling/SCHED-015-undecided-integration-hardening.md)
+- [SCHED-016 — Terminal retention, recovery boundaries and management limits](scheduling/SCHED-016-terminal-retention-recovery-boundaries-and-management-limits.md)
+
+### [Transport mapping](transport/README.md)
+
+- [TRANSPORT-001 — Preserve representation and identity boundaries](transport/TRANSPORT-001-preserve-representation-and-identity-boundaries.md)
+- [TRANSPORT-002 — Envelope and payload serialization surface](transport/TRANSPORT-002-envelope-and-payload-serialization-surface.md)
+- [TRANSPORT-003 — Registration and exact mapping resolution](transport/TRANSPORT-003-registration-and-exact-mapping-resolution.md)
+- [TRANSPORT-004 — Incoming typed admission and metadata loss boundary](transport/TRANSPORT-004-incoming-typed-admission-and-metadata-loss-boundary.md)
+- [TRANSPORT-005 — Admission failures, duplicates and cancellation](transport/TRANSPORT-005-admission-failures-duplicates-and-cancellation.md)
+- [TRANSPORT-006 — Outgoing payload construction and permanent mapping faults](transport/TRANSPORT-006-outgoing-payload-construction-and-permanent-mapping-faults.md)
+- [TRANSPORT-007 — External publication and per-target completion are separate](transport/TRANSPORT-007-external-publication-and-per-target-completion-are-separate.md)
+- [TRANSPORT-008 — Unapproved compatibility and synchronous cancellation decisions](transport/TRANSPORT-008-unapproved-compatibility-and-synchronous-cancellation-decisions.md)
+
+## Related references
+
+- [Unresolved decisions](GAPS.md)
+- [Verification boundaries](TRACEABILITY.md)
+- [Architecture](../reference/architecture.md)

@@ -242,6 +242,43 @@ Test behaviour and contracts, not incidental implementation mechanics. TUnit is 
 - Run the narrowest relevant build/tests, then broaden as required. Use existing tooling; introduce a test framework only as part of an intentional testing change.
 - Report actual commands, results, and blockers accurately. Documentation-only changes require link/content checks, not an unrelated code build, unless documentation tooling is configured.
 
+### Testing framework and naming
+The standard .NET testing stack is **TUnit**, **NSubstitute**, and **Testcontainers**, with **WireMock.Net** for HTTP integration tests where appropriate. Use TUnit's native assertions. Do not introduce FluentAssertions or commercially licensed assertion libraries. Check which tools are actually configured before claiming they are available in a repository.
+All .NET test methods **must** follow:
+`MethodName_StateUnderTest_ExpectedBehavior`
+- `MethodName` identifies the method, operation, or entry point being tested.
+- `StateUnderTest` describes the relevant scenario, inputs, or preconditions.
+- `ExpectedBehavior` describes the observable outcome.
+- Use PascalCase for each segment, separated by underscores.
+- Apply this convention consistently to unit, integration, and end-to-end tests.
+- Use meaningful domain terminology; avoid generic names or descriptions of private implementation details.
+- Keep acceptance-criteria identifiers in traceability metadata or documentation, **not** in test method names.
+Examples:
+```csharp
+Accept_WhenMessageAlreadyAdmitted_DoesNotDuplicateConsumerEntries
+Claim_WhenLeaseExpired_AllowsNewOwner
+Dispatch_WhenConsumerFails_RetriesMessage
+```
+Follow the user-level `clean-testing` skill for testing strategy and the official `tunit` skill for framework-specific syntax and execution.
+
+### Test-case traceability
+Each .NET test verifying a documented acceptance criterion must include a method-level TUnit property with the criterion's **existing stable ID**:
+```csharp
+[Test]
+[Property("TestCaseId", "INBOX-001-AC-02")]
+public async Task Accept_WhenMessageAlreadyAdmitted_DoesNotDuplicateConsumerEntries()
+{
+    // Test implementation
+}
+```
+- Use exactly `TestCaseId` for the property name across repositories.
+- Use the ID from the canonical behavioural specification; do not invent or silently rename identifiers.
+- Keep test method names in `MethodName_StateUnderTest_ExpectedBehavior` format, without embedding IDs.
+- Different tests may reference the same acceptance criterion when they verify different scenarios or boundaries.
+- Flag tests with no approved specification rather than attaching an unrelated ID. Do not claim coverage merely because an attribute exists.
+- Validate the ID-to-test mapping during test review and report unlinked or unverified criteria.
+
+
 ## 16. Performance and resource management
 
 Prioritise correctness and clarity; optimise demonstrated bottlenecks, not speculation. Avoid unnecessary allocations on hot paths, repeated queries, hidden expensive properties, and needless materialisation. Stream or batch where justified and maintainable.
