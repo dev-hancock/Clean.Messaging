@@ -3,13 +3,8 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace Clean.Messaging.Outbox.EntityFrameworkCore;
 
-public interface IOutboxCapture
-{
-    void Capture(DbContext db);
-}
-
 internal sealed class OutboxInterceptor(
-    IEnumerable<IOutboxCapture> captures,
+    IEnumerable<ISaveCapture> captures,
     OutboxTracker tracker)
     : SaveChangesInterceptor
 {

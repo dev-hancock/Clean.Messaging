@@ -63,27 +63,32 @@ public sealed class OutboxTracker(
         }
     }
 
-    public bool Capture(
+    public bool Capture<TCapture>(
         DbContext db,
-        Guid id,
+        Guid eventId)
+    {
+        var state = CurrentSave(db);
+        var key = new CaptureKey(
+            typeof(TCapture),
+            eventId);
+
+        return !state.PendingCommit.Captures.Contains(key) &&
+               state.CurrentSave!.Captures.Add(key);
+    }
+
+    public void AcknowledgeAfterCommit(
+        DbContext db,
+        Guid eventId,
         Action acknowledge)
     {
         ArgumentNullException.ThrowIfNull(
             acknowledge);
 
-        var state = CurrentSave(db);
-
-        if (state.PendingCommit.Captures.Contains(id) ||
-            !state.CurrentSave!.Captures.Add(id))
-        {
-            return false;
-        }
-
-        state.CurrentSave.Acknowledgements.Add(
-            id,
-            acknowledge);
-
-        return true;
+        CurrentSave(db)
+            .CurrentSave!
+            .Acknowledgements.TryAdd(
+                eventId,
+                acknowledge);
     }
 
     public void TrackEntries(
@@ -291,9 +296,13 @@ public sealed class OutboxTracker(
         public bool CommitInProgress { get; set; }
     }
 
+    private readonly record struct CaptureKey(
+        Type CaptureType,
+        Guid EventId);
+
     private sealed class SaveState
     {
-        public HashSet<Guid> Captures { get; } = [];
+        public HashSet<CaptureKey> Captures { get; } = [];
 
         public Dictionary<Guid, Action> Acknowledgements { get; } = [];
 

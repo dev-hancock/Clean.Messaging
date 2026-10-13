@@ -1,4 +1,3 @@
-using Clean.Messaging.DomainEvents;
 using Clean.Messaging.Outbox;
 using Clean.Messaging.Outbox.EntityFrameworkCore;
 using Clean.Messaging.Outbox.Persistence;
@@ -10,7 +9,7 @@ internal sealed class DomainEventCapture(
     OutboxEntryFactory entries,
     IOutboxWriter writer,
     OutboxTracker tracker)
-    : IOutboxCapture
+    : ISaveCapture
 {
     public void Capture(
         DbContext db)
@@ -35,14 +34,18 @@ internal sealed class DomainEventCapture(
     {
         foreach (var @event in aggregate.Events)
         {
-            if (!tracker.Capture(
+            if (!tracker.Capture<DomainEventCapture>(
                     db,
-                    @event.Id,
-                    () => aggregate.Acknowledge(
-                        @event.Id)))
+                    @event.Id))
             {
                 continue;
             }
+
+            tracker.AcknowledgeAfterCommit(
+                db,
+                @event.Id,
+                () => aggregate.Acknowledge(
+                    @event.Id));
 
             writer.Stage(
                 db,

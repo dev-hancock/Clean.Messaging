@@ -12,7 +12,7 @@ public static class DependencyInjection
         this IServiceCollection services)
     {
         services.TryAddEnumerable(
-            ServiceDescriptor.Scoped<IOutboxCapture, DomainEventCapture>());
+            ServiceDescriptor.Scoped<ISaveCapture, DomainEventCapture>());
 
         return services;
     }
