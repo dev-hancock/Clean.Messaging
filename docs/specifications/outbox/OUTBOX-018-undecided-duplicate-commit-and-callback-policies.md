@@ -1,17 +1,32 @@
 # OUTBOX-018 — Undecided duplicate, commit and callback policies
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Unknown behaviour
+## Intent
 
-**Evidence:** Evidence: tracked writer, target provider, tracker/commit verifier and [GAP-DUR-006](../GAPS.md#gap-dur-006), [GAP-DUR-007](../GAPS.md#gap-dur-007), [GAP-DUR-008](../GAPS.md#gap-dur-008), [GAP-DUR-009](../GAPS.md#gap-dur-009). No normative resolution found.
+Applications need explicit policy choices for identity conflict, targetless/external-only routing, uncertain commit and postcommit acknowledgement before treating accidental implementation outcomes as durable promises.
 
-The numbered questions below remain undecided. Preconditions: explicit product policy selection; no implicit repair, guarantee of durable callbacks or idempotent save is approved. Limitations include commit evidence deletion and callback-only/custom capture integrations.
+## Guarantees
 
-**Undecided questions (not acceptance criteria):**
+- Unapproved routing, conflict and recovery proposals MUST NOT be represented as required implemented policy.
+- Owning-state capture atomicity, per-target identity, failure transparency and the external repeat limitation MUST remain established while related choices are open.
 
-1. **external-only and empty targeting contract:** What approved policy should apply when a valid event has only external targets or no targets? Decision to resolve: specify empty/local-miss handling without relying on current Get exception or silently acknowledging zero outgoing work.
+The independent basis is the [coding standards](../../CODING_STANDARDS.md), especially the cited identity, lifetime, failure and local-transaction requirements. Coding standards sections 7, 8 and 9 establish atomic capture, stable identities and truthful uncertainty; they do not independently select the unresolved content, target or callback protocols.
 
-2. **persisted duplicate and content conflict contract:** What approved policy should apply when the logical pair already exists with equal or conflicting payload? Decision to resolve: choose duplicate suppression, conflict failure or documented uniqueness failure and define tracked versus persisted equivalence/retention scope.
+## Contract boundaries
 
-3. **uncertain commit recovery and callback safety:** What approved policy should apply when keys are absent/cleaned, verifier unavailable, or postcommit callback throws? Decision to resolve: define context disposal/recovery, evidence horizon, callback isolation/error reporting and zero-key outcome without declaring commit/rollback from uncertainty.
+This decision catalogue adds no resolved acceptance algorithm. Enqueue/save/commit/publication are separate boundaries. A unique index is not content comparison, key absence need not prove rollback, and a callback throw cannot undo committed database work.
+
+## Acceptance criteria
+
+No resolved acceptance criteria are assigned on this page. The unresolved choices are collected under Open decisions.
+
+## Open decisions
+
+- [GAP-DUR-006](../GAPS.md#gap-dur-006): decide external-only default routing, targetless validity and capture responsibility.
+- [GAP-DUR-007](../GAPS.md#gap-dur-007): decide equivalent retry versus conflicting event/target content and persisted duplicate behavior.
+- [GAP-DUR-008](../GAPS.md#gap-dur-008): decide uncertain commit evidence, evidence expiry and bounded verification lifetime/cancellation.
+- [GAP-DUR-009](../GAPS.md#gap-dur-009): decide acknowledgement identity, callback-only participation and recovery/error reporting after callback failure.
+- Outgoing route validation responsibility/timing remains unapproved in [OUTBOX-003](OUTBOX-003-target-validation-local-selection-and-empty-batches.md).
+
+Documenting or scaling these specifications does not approve any recommendation.

@@ -2,22 +2,35 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Unknown behaviour
+## Intent
 
-**Contracts and applicability:** Public SagaNotFoundException is Retry; SagaConflictException and SagaClosedException are Fault and expose SagaType/Key; SagaSerializationException is Fault with optional inner exception. Observed malformed-result discrepancy: SagaFailure validates diagnostics but SagaResult.Fail does not use it. Conflict lookup catches cancellation and preserves original save error.
+Workflow authors and hosts need to distinguish business Fail diagnostics and cancellation precedence from the already-compatible public saga failure surface.
 
-**Evidence:** Exceptions/*.cs; SagaFailure.cs; SagaResult.Fail; SagaEntry.Fail; SagaConflictResolver.Find; gaps GAP-WF-008 and GAP-WF-010.
+The exception-compatibility and explicit outcome standards protect public missing/conflict/closed/serialization behavior; they do not establish malformed-result validation or lookup cancellation precedence. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Intent gaps:** [GAP-WF-008](../GAPS.md#gap-wf-008), [GAP-WF-010](../GAPS.md#gap-wf-010).
+## Guarantees
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+- Business Fail outcomes MUST remain distinguishable from processing exceptions and cancellation.
+- Public saga recovery classifications MUST not be changed merely to settle malformed diagnostic or collision-lookup policy.
 
-## Question SAGA-014-Q-01 ? Validated diagnostic value versus raw Fail result
+## Contract boundaries
 
-**Scenario:** null/blank code/message, code lengths 200/201 and message lengths 500/501; SagaFailure is constructed versus SagaResult.Fail used.
-**Decision question:** Is this conditional candidate the intended policy: pending GAP-WF-008, if current disparity is retained, SagaFailure rejects invalid/overlong values while Fail accepts them until provider/state persistence; tests must not impose universal provider rejection?
+Valid business Fail is covered by SAGA-006 and public exceptions by SAGA-013. This page reserves the raw-diagnostic disparity and competing failure/cancellation outcome; neither proposal is approved.
 
-## Question SAGA-014-Q-02 ? Cancelled conflict lookup preserves save error today
+## Acceptance criteria
 
-**Scenario:** qualifying DbUpdateException and caller cancellation during fresh winner lookup; async collision resolution runs.
-**Decision question:** Is this conditional candidate the intended policy: pending GAP-WF-010, if current fallback is retained, the original DbUpdateException remains instead of cancellation propagation; normative cancellation policy needs a deliberate decision?
+No acceptance criteria are assigned to the unresolved policies on this page. The cross-cutting guarantees above do not decide those policies.
+
+## Open decisions
+
+### Question SAGA-014-Q-01 ? Validated diagnostic value versus raw Fail result
+
+**Reserved — no normative acceptance scenario.** What admission behavior applies to null, blank and overlong SagaResult.Fail diagnostics?
+
+Decision: [GAP-WF-008](../GAPS.md#gap-wf-008) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### Question SAGA-014-Q-02 ? Cancelled conflict lookup preserves save error today
+
+**Reserved — no normative acceptance scenario.** Should cancellation during winner lookup replace or preserve the original database save failure?
+
+Decision: [GAP-WF-010](../GAPS.md#gap-wf-010) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.

@@ -1,18 +1,48 @@
 # MQTT-010 — Outgoing packet metadata and retain semantics
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) | [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
-**Evidence:** [MqttMessageFactory](../../../src/Clean.Messaging.Outbox.Dispatch.Mqtt/Publishing/MqttMessageFactory.cs), [reserved names](../../../src/Clean.Messaging.Outbox.Dispatch.Mqtt/Publishing/MqttMessageMetadata.cs), [transport name](../../../src/Clean.Messaging.Outbox.Dispatch.Mqtt/Publishing/MqttTransport.cs), [dispatch factory](../../../src/Clean.Messaging.Outbox.Dispatch/TransportMessageFactory.cs).
+## Intent
 
-## MQTT-010-AC-01 — Packet includes stored route destination, payload and application identities
-**Given** valid mapped transport data, stored topic, route retain and validated outgoing QoS, **When** the packet is constructed/published, **Then** topic/payload/QoS/retain match those inputs and UTF-8 reserved user properties contain required nonempty message/event GUIDs in D format and the mapped payload contract. Retain defaults false and is unrelated to durable retention.
+MQTT peers need stable authoritative identity metadata protected from caller overrides and packet attributes distinct from durable target retention.
 
-## MQTT-010-AC-02 — Reserved metadata cannot be overridden by caller headers
-**Given** a transport message with exact reserved-name header attempts plus duplicate nonreserved headers and nonblank Content Type, **When** the packet is constructed, **Then** factory-owned reserved properties prevail, nonreserved properties are appended in UTF-8, duplicate nonreserved values remain representable and nonblank Content Type is included. Case-distinct names are not reserved aliases.
+Authority: Deliberate shared producer/consumer metadata, packet options and public retain default, protected by coding standards on reserved metadata, identity, serialized compatibility and diagnostics. Optional empty-ID asymmetry is not approved interoperability. See [coding standards](../../CODING_STANDARDS.md).
 
-## MQTT-010-AC-03 — Missing required IDs or destination reject outgoing construction
-**Given** absent/empty required message/event ID or blank destination, **When** packet construction runs, **Then** permanent `OutboxDispatchException` is raised and no successful packet publication is reported. Packet construction follows connected-client acquisition in the current transport path, so connection attempts are not excluded by this failure.
+## Guarantees
 
-## MQTT-010-AC-04 — Optional empty IDs expose current peer incompatibility
-**Given** transport correlation/causation set to Guid.Empty, **When** the outgoing factory constructs metadata, **Then** it emits their D-format empty values without separate validation; an incoming adapter receiving that present value classifies it as poison. Absent optional IDs are omitted. See [GAP-TX-005](../GAPS.md#gap-tx-005); this is not a requirement for interoperable empty IDs.
+- Packets MUST carry stored destination, mapped bytes, configured QoS, route retain and authoritative required message/event IDs plus mapped contract. Required IDs MUST be nonempty D-format GUIDs.
+- Exact reserved header names MUST NOT override factory metadata; nonreserved duplicate headers and nonblank content type MUST remain representable.
+- Missing/empty required IDs and blank destination MUST fail permanent OutboxDispatchException without successful packet publication.
+- Route retain MUST default false and MUST NOT imply durable retention or exactly-once processing.
+
+## Contract boundaries
+
+Reserved exact-case names: message-id, event-id, contract, correlation-id, causation-id. Meaningful optional IDs carry context; case-distinct headers are not reserved aliases. Packet validity does not prove connectivity, broker acceptance or recipient effects. Connected-client acquisition can precede packet validation, so failure does not exclude a connection attempt.
+
+## Acceptance criteria
+
+### MQTT-010-AC-01 — Packet includes stored route destination, payload and application identities
+
+- **Given** valid mapped data, stored topic, route retain and configured QoS.
+- **When** packet construction/publication occurs.
+- **Then** topic/bytes/QoS/retain match inputs and UTF-8 reserved properties contain nonempty D-format message/event IDs and mapped contract; retain defaults false independently of durable retention.
+
+### MQTT-010-AC-02 — Reserved metadata cannot be overridden by caller headers
+
+- **Given** exact reserved override attempts, duplicate nonreserved headers and nonblank content type.
+- **When** the packet is constructed.
+- **Then** factory metadata prevails; nonreserved UTF-8 duplicates and content type remain, while case-distinct names are not reserved aliases.
+
+### MQTT-010-AC-03 — Missing required IDs or destination reject outgoing construction
+
+- **Given** missing/empty required message/event ID or blank destination.
+- **When** packet construction runs.
+- **Then** permanent OutboxDispatchException prevents reported successful publication, without excluding earlier connection acquisition.
+
+## Open decisions
+
+The original IDs and exact heading anchors below remain reserved, not normative scenarios. No replacement IDs are assigned before a decision.
+
+### MQTT-010-AC-04 — Optional empty IDs expose current peer incompatibility
+
+Should empty optional IDs be omitted, rejected before publish or accepted as absent by both peers? Keep the original asymmetric producer/consumer composite reserved. See [GAP-TX-005](../GAPS.md#gap-tx-005); the recommendation remains unapproved.

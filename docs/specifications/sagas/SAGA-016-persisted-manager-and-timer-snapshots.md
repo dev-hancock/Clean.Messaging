@@ -2,46 +2,57 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** ISagaManager.Get(id,token), GetActive(limit=100,token), GetFailed(limit=100,token), GetTimers(id,token). Saga snapshot exposes Id/Type/Key/Version/timestamps/code/message and IsActive/IsTerminal, not state/start identity. SagaTimer exposes ID/owner/type/contract/due/attempt/retry/consumed/cancelled/failed/code/message, not payload/ownership metadata.
+Operators need read-only persisted workflow and timer snapshots without implying repair, handler state access or delivery confirmation.
 
-**Evidence:** ISagaManager.cs; Saga.cs; SagaTimer.cs; SagaManager.cs; SagaStore.Get/GetActive/GetFailed; ScheduleStore.GetGroup.
+ISagaManager, immutable Saga/SagaTimer records and snapshot/resource-bound standards establish nonmutating reads, filters and explicit failure/absence. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+## Guarantees
 
-## SAGA-016-AC-01 — Get and absent timer listing are nonmutating
+- Manager reads MUST not mutate workflow/timer state and MUST distinguish absence from I/O failure or cancellation.
+- Positive list limits MUST be respected; snapshot flags MUST reflect persisted lifecycle rather than unsaved local changes.
 
-**Given** persisted active/terminal/absent SagaId.
-**When** Get or GetTimers completes.
-**Then** Get returns the matching snapshot or null; absent saga yields no timers; reads do not reopen/create/purge work.
+## Contract boundaries
 
-## SAGA-016-AC-02 — Lists filter and bound persisted state
+No typed state getter, force-complete/reopen/replay operation or global list ordering is promised. Timer snapshots use the owning saga target/group and scheduling retention; exact list/projection ordering remains reserved.
 
-**Given** mixed active/complete/failed rows and positive requested limit.
-**When** GetActive or GetFailed reads.
-**Then** active list excludes all terminal rows and orders CreatedAt ascending; failed list excludes active/complete and orders FailedAt descending; no more than limit are returned, ties unspecified.
+## Acceptance criteria
 
-## SAGA-016-AC-03 — Limits reject nonpositive values
+### SAGA-016-AC-01 — Get and absent timer listing are nonmutating
 
-**Given** limit zero or negative versus omitted or positive.
-**When** GetActive/GetFailed is called.
-**Then** nonpositive limit rejects; omitted limit is 100; positive limit bounds persisted results.
+**Given** an existing or absent SagaId.
+**When** Get or timer listing is read.
+**Then** Get returns a retained snapshot or null, absent-instance timers are empty, and neither operation mutates state.
 
-## SAGA-016-AC-04 — Timer projection uses saga target and history
+### SAGA-016-AC-03 — Limits reject nonpositive values
 
-**Given** a saga has active and terminal timers plus other-target schedules.
-**When** GetTimers reads.
-**Then** only saga group/target timers appear ordered due then ID, ConsumedAt reflects schedule dispatch, and IsTerminal is true for consumed/cancelled/failed timestamps.
+**Given** default, positive, zero or negative manager list limits.
+**When** GetActive or GetFailed is requested.
+**Then** the default limit is 100, a supplied positive bound is honored, and nonpositive limits are rejected.
 
-## SAGA-016-AC-05 — Snapshot flags and unsaved changes
+### SAGA-016-AC-05 — Snapshot flags and unsaved changes
 
-**Given** persisted rows have completion/failure/null terminal timestamps while local changes remain unsaved.
-**When** manager reads snapshots.
-**Then** IsActive iff both saga terminal timestamps are absent, IsTerminal is inverse; persisted values are returned without unsaved-state merge or mutable tracked state exposure.
+**Given** persisted lifecycle timestamps differ from unsaved local mutations.
+**When** manager snapshots are read.
+**Then** Saga IsActive is true exactly when both CompletedAt and FailedAt are absent, and IsTerminal is its inverse; a timer is terminal when consumed, cancelled or failed. These flags follow persisted timestamps without unsaved-state merge or mutable tracked-state exposure.
 
-## SAGA-016-AC-06 — Read failure and cancellation are not empty success
+### SAGA-016-AC-06 — Read failure and cancellation are not empty success
 
-**Given** manager database I/O fails or is cancelled.
-**When** Get/list/timer read runs.
-**Then** failure or cancellation propagates; only genuinely absent persisted data becomes null/empty.
+**Given** a manager persistence read fails or observes cancellation.
+**When** its outcome is returned.
+**Then** failure/cancellation is exposed, not replaced by successful null or empty results.
+
+## Open decisions
+
+### SAGA-016-AC-02 — Lists filter and bound persisted state
+
+**Reserved — no normative acceptance scenario.** Are claim order, group/timer order and manager list order contractual, and what tie-breaks or fairness are promised?
+
+Decision: [GAP-INTENT-WF-001](../GAPS.md#gap-intent-wf-001) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### SAGA-016-AC-04 — Timer projection uses saga target and history
+
+**Reserved — no normative acceptance scenario.** Are claim order, group/timer order and manager list order contractual, and what tie-breaks or fairness are promised?
+
+Decision: [GAP-INTENT-WF-001](../GAPS.md#gap-intent-wf-001) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.

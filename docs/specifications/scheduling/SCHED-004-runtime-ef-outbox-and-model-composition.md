@@ -2,46 +2,57 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** AddScheduling callback; EF MessagingBuilder.AddScheduling, ModelBuilder.AddScheduling, typed/untyped DbContextOptionsBuilder.AddScheduling; AddOutboxScheduling. Runtime ports are provider-facing, not a standalone alternative-provider guarantee.
+Host integrators need explicit runtime, persistence and delivery composition so startup cannot be confused with installing a database or completing a delivery.
 
-**Evidence:** All scheduling DependencyInjection.cs files; SchedulingRuntimeValidation.cs; SchedulingValidation.cs; OutboxSchedulingValidation.cs; SchedulingConfiguration.cs.
+The separate public runtime/EF/Outbox registration surfaces and the standards on scoped composition, provider isolation and host-owned schema establish this boundary. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+## Guarantees
 
-## SCHED-004-AC-01 — Runtime registration is not durable installation
+- A durable EF composition MUST have a relational scoped context, schedule mapping, required hooks and resolvable persistence/execution services.
+- Delivery registration MUST identify one delivery per exact target; equivalent options overloads MUST install equivalent integration without duplicating the same hook instance.
 
-**Given** only runtime AddScheduling is called.
-**When** a host attempts application-facing scheduling or durable processing.
-**Then** registration alone has not supplied IMessageScheduler, a persistence executor/store or durable workers; the host must compose those dependencies.
+## Contract boundaries
 
-## SCHED-004-AC-02 — Outbox adapter does not install outbox persistence
+Runtime and Outbox bridge registration do not create persistence or schema. Hosts own migrations and same-context composition. Unknown retained target failure classification is undecided, but a missing delivery cannot demonstrate successful dispatch.
 
-**Given** AddOutboxScheduling without required outgoing/persistence services.
+## Acceptance criteria
+
+### SCHED-004-AC-01 — Runtime registration is not durable installation
+
+**Given** runtime-only scheduling registration.
+**When** the host assesses durable installation.
+**Then** registration alone does not supply the durable provider, executor/worker or IMessageScheduler; those capability choices remain explicit.
+
+### SCHED-004-AC-02 — Outbox adapter does not install outbox persistence
+
+**Given** Outbox scheduling bridge registration lacks its outgoing writer, scheduler or delivery dependencies.
+**When** the host validates a usable bridge composition.
+**Then** the missing dependency prevents valid startup rather than silently installing persistence or treating registration as ready durable publication.
+
+### SCHED-004-AC-03 — EF composition requires relational configured context
+
+**Given** an EF scheduling composition lacks relational use, mapped schedules or required save/transaction integration.
 **When** startup validation runs.
-**Then** missing outgoing writer/scheduler/delivery dependencies prevent valid startup instead of silently supplying a database or publishing.
+**Then** the composition is rejected; passing validation does not create schema or validate a deployment provider.
 
-## SCHED-004-AC-03 — EF composition requires relational configured context
+### SCHED-004-AC-04 — Typed and untyped options install equivalent integration
 
-**Given** nonrelational provider, missing schedule model or missing required interceptors.
-**When** EF scheduling startup validation runs.
-**Then** startup rejects the deficient integration; registration does not create schema or migrations.
+**Given** the same services are applied through typed or untyped EF options overloads.
+**When** the host installs scheduling integration, including repeating attachment of the same hook instances.
+**Then** both overloads provide equivalent behavior and the identical hook instance is not attached twice.
 
-## SCHED-004-AC-04 — Typed and untyped options install equivalent integration
+### SCHED-004-AC-05 — Target registration is exact and unique
 
-**Given** valid model and services with either options overload.
-**When** a schedule is saved and its explicit transaction committed.
-**Then** both overloads support the same save/commit visibility and processing boundary; reapplying the same installed interceptor instance does not duplicate integration.
+**Given** deliveries claiming equal or differently cased target strings.
+**When** the delivery composition is validated.
+**Then** equal exact targets cannot ambiguously select two deliveries; differently cased valid targets remain distinct.
 
-## SCHED-004-AC-05 — Target registration is exact and unique
+## Open decisions
 
-**Given** two delivery registrations with the same ordinal target or only differently cased targets.
-**When** runtime delivery registry validation runs.
-**Then** the identical target is rejected; differently cased targets remain distinct routing identities.
+### SCHED-004-AC-06 — Unknown retained target faults when encountered
 
-## SCHED-004-AC-06 — Unknown retained target faults when encountered
+**Reserved — no normative acceptance scenario.** Is scheduling.delivery.target_not_registered/Fault the deliberate public recovery outcome for a retained unknown target?
 
-**Given** a persisted eligible schedule whose exact target is no longer registered.
-**When** processing attempts delivery.
-**Then** the schedule faults with scheduling.delivery.target_not_registered; startup does not promise a scan of every retained row.
+Decision: [GAP-INTENT-WF-007](../GAPS.md#gap-intent-wf-007) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.

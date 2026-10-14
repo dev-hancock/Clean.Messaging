@@ -35,7 +35,7 @@ Conceptual reasoning based on the current mechanisms, not undocumented claims ab
 
 ## Behavioural specifications
 
-[Specifications index](specifications/INDEX.md): capability-organised contracts and stable acceptance criteria, with shared boundaries and individual numbered specification pages. Specifications distinguish **Required**, **Observed**, **Proposed** and **Unknown** behaviour; source observations and proposals are not automatically approved requirements. [Open decisions](specifications/GAPS.md) remain explicit. The [testing reference](reference/testing.md) describes repeatable execution and stable criterion metadata; run results belong in test and CI artifacts.
+[Specifications index](specifications/INDEX.md): intent-first capability contracts, each stating intent, guarantees, contract boundaries, acceptance criteria and open decisions. Established obligations have stable acceptance identifiers. Identifiers retained under open decisions remain reserved for their original meaning, not approved scenarios or replacement requirements. Source observations and recommendations do not establish authority; [open decisions](specifications/GAPS.md) retain their questions and proposed dispositions. The [testing reference](reference/testing.md) describes repeatable execution and stable criterion metadata; run results belong in test and CI artifacts.
 
 Specifications are a separate responsibility from Diátaxis Reference and Explanation: they define the candidate behavioural baseline against which a future test suite can be reviewed.
 

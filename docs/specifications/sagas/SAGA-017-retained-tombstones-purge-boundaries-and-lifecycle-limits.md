@@ -2,48 +2,57 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** Saga cleanup purges JSON state of old terminal records, not identity/tombstones. Scheduling retention independently deletes timer rows. There is no public reopen/reset/force-result/replay/identity-delete/state-migration or stuck-workflow repair command.
+Operators need separate state-payload and timer-history retention without assuming cleanup repairs business failure or erases retained workflow identity.
 
-**Evidence:** SagaStore.PurgeState; SagaCleanupWorker.cs; SagaEntry.cs; SagaConfiguration.cs; ISagaManager.cs; Scheduling cleanup.
+The standards on terminal retention, identity evidence and application-owned saga recovery/compensation establish these lifecycle limits; indefinite tombstone duration and exact purge mechanics remain policy decisions. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Intent gaps:** [GAP-WF-011](../GAPS.md#gap-wf-011).
+## Guarantees
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+- Payload cleanup MUST exclude active workflows and MUST not by itself free retained type/key identity.
+- Timer-history lifetime MUST remain independent of saga payload retention; timer failure MUST not automatically fail, purge or compensate an active workflow.
 
-## SAGA-017-AC-01 — Strict terminal purge cutoff
+## Contract boundaries
 
-**Given** completed/failed rows with terminal timestamp before/equal/after cutoff and old active rows.
-**When** a purge batch runs.
-**Then** only previously unpurged terminal state strictly before cutoff is replaced with JSON null; equality/after/active rows retain their state.
+Payload purge removes state needed for forensic reconstruction. Identity lifetime/restart is GAP-WF-011; exact cutoff, cadence and purge concurrency/timestamps are open. Management snapshots are not repair commands.
 
-## SAGA-017-AC-02 — Purge retains identity and lifecycle diagnostics
+## Acceptance criteria
 
-**Given** an eligible terminal saga is purged.
-**When** persisted snapshot and uniqueness are read.
-**Then** StatePurgedAt records purge time; type/key/start identity/outcome/diagnostics remain, and Version and UpdatedAt are not incremented by purge.
+### SAGA-017-AC-05 — Timer history has independent retention
 
-## SAGA-017-AC-03 — Purge is periodic bounded and recoverable
+**Given** a retained saga identity or purged state outlives its timer rows.
+**When** timer retention deletes eligible scheduled history.
+**Then** the saga record does not preserve deleted timer history; scheduling and saga retention have separate evidence horizons.
 
-**Given** host starts or purge fails with more eligible rows than batch.
-**When** cleanup lifecycle continues.
-**Then** no immediate startup purge is assumed; one configured batch ordered by UpdatedAt is attempted per tick; failure retries on later tick.
+### SAGA-017-AC-06 — Active failed-timer workflow needs application policy
 
-## SAGA-017-AC-04 — Tombstone blocks key restart indefinitely today
+**Given** an active saga has a failed/exhausted timer.
+**When** state cleanup or manager observation runs.
+**Then** the timer outcome alone does not purge active state, business-fail or compensate it; business recovery remains application policy.
 
-**Given** a terminal tombstone survives far beyond retention.
-**When** same start, different start or continuation arrives.
-**Then** same start remains no-op, different start remains closed and continuation remains ignored; retention does not free that type/key.
+## Open decisions
 
-## SAGA-017-AC-05 — Timer history has independent retention
+### SAGA-017-AC-01 — Strict terminal purge cutoff
 
-**Given** saga tombstone survives while old terminal timer rows are deleted.
-**When** GetTimers and Get are read.
-**Then** saga identity/outcome can remain while timer history is absent; this is not a complete indefinite workflow audit trail.
+**Reserved — no normative acceptance scenario.** What exact cutoff equality, batch ordering, startup cadence and purge version/timestamp semantics are promised?
 
-## SAGA-017-AC-06 — Active failed-timer workflow needs application policy
+Decision: [GAP-INTENT-WF-004](../GAPS.md#gap-intent-wf-004) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
 
-**Given** saga remains active with failed/exhausted timers and no later business message.
-**When** cleanup and manager reads occur.
-**Then** active saga is not automatically purged, failed, compensated or repaired; manager APIs provide observation, not a business policy engine.
+### SAGA-017-AC-02 — Purge retains identity and lifecycle diagnostics
+
+**Reserved — no normative acceptance scenario.** What exact cutoff equality, batch ordering, startup cadence and purge version/timestamp semantics are promised? How long are saga type/key/start tombstones retained, and when can identity be deleted or restarted?
+
+Decision: [GAP-INTENT-WF-004](../GAPS.md#gap-intent-wf-004), [GAP-WF-011](../GAPS.md#gap-wf-011) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### SAGA-017-AC-03 — Purge is periodic bounded and recoverable
+
+**Reserved — no normative acceptance scenario.** What exact cutoff equality, batch ordering, startup cadence and purge version/timestamp semantics are promised? Are claim order, group/timer order and manager list order contractual, and what tie-breaks or fairness are promised?
+
+Decision: [GAP-INTENT-WF-004](../GAPS.md#gap-intent-wf-004), [GAP-INTENT-WF-001](../GAPS.md#gap-intent-wf-001) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### SAGA-017-AC-04 — Tombstone blocks key restart indefinitely today
+
+**Reserved — no normative acceptance scenario.** How long are saga type/key/start tombstones retained, and when can identity be deleted or restarted?
+
+Decision: [GAP-WF-011](../GAPS.md#gap-wf-011) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.

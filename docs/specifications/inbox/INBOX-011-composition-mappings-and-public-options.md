@@ -1,27 +1,44 @@
 # INBOX-011 — Composition, mappings and public options
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: Inbox EF `DependencyInjection`, `InboxConfiguration`, `InboxValidation`, project references; `InboxOptions.Section`. [Configuration](../../reference/configuration.md) and [processing defaults](../../reference/processing.md) are descriptive.
+Host authors need a predictable public composition contract for durable Inbox processing and clear separation between valid service/model configuration and an actually installed persistence schema.
 
-Contracts: services AddInbox<TDbContext>(Action<InboxOptions>?), IConfiguration overload, MessagingBuilder overload, ModelBuilder.AddInbox; InboxOptions inherits Lease/Processing/Recovery/Cleanup with Section="Inbox". Preconditions: relational mapped schema, same scoped context type across inbox/outbox, contracts/consumers installed by host. Registrations preserve prior TryAdd services. Model keys: admission MessageId and unique EventId; entry composite MessageId/TargetId and unique EventId/TargetId, target max 200 ASCII mapping. Validation checks relational provider, both model entities and processor resolvability, not database schema/migration/provider correctness. Hosted cleanup lifetime caveat is separately specified.
+## Guarantees
 
-## INBOX-011-AC-01 — Bind configure and configuration overloads
+- Service and builder registration MUST preserve callback configuration and the Inbox configuration-section binding for shared durable options.
+- Supported EF composition MUST require a relational configured context, both admission and target mappings, a resolvable processor and one messaging context type shared with Outbox.
+- Options MUST reject nonpositive lease, renewal, concurrency, capacity, batch, settlement, recovery, cleanup and retention settings; renewal MUST be shorter than its lease and maximum recovery delay MUST not be shorter than the recovery interval.
+- Model/service validation MUST NOT be presented as schema installation, migration execution or certification of every relational provider.
 
-- **Given** a host calls the service or builder overload and uses callback settings or the Inbox configuration section.
-- **When** options resolve and startup validation executes.
-- **Then** requested shared durable settings are available; missing/nonrelational mappings or mismatched configured persistence context types are rejected.
+The independent basis is the [coding standards](../../CODING_STANDARDS.md), especially the cited identity, lifetime, failure and local-transaction requirements. Coding standards sections 6 and 14 for public registration compatibility, lifetime ownership and explicit validation; provider-neutral/EF responsibilities are defined by the architecture boundary.
 
-## INBOX-011-AC-02 — Require positive valid shared settings
+## Contract boundaries
 
-- **Given** configured nonpositive durations/concurrency/capacity/batch/settlement/retention, renewal >= lease duration or failure max delay < recovery interval.
-- **When** options startup validation runs.
-- **Then** invalid settings fail rather than authorize an unsafe processing schedule.
+The consumer host owns the scoped context, provider, model installation, database schema/migrations and lifetime-compatible custom services. Inbox composition does not install an outgoing capture transaction merely by admitting incoming work. Cleanup lifetime safety is an independent requirement in [INBOX-012](INBOX-012-scoped-cleanup-composition-requirement-and-current-mismatch.md).
 
-## INBOX-011-AC-03 — Do not infer installed schema from model validation
+## Acceptance criteria
 
-- **Given** a relational context maps admissions and entries but database tables are absent or incompatible.
-- **When** startup model validation succeeds and an admission/store operation follows.
-- **Then** startup success alone does not certify schema; actual persistence can fail.
+### INBOX-011-AC-01 — Bind configure and configuration overloads
+
+- **Given** a host uses the callback, configuration-section or builder admission registration with its context.
+- **When** configured options resolve and durable composition is validated.
+- **Then** the requested Inbox settings bind; a nonrelational or missing admission/entry model, missing processor, or conflicting messaging context type fails rather than suggesting complete integration.
+
+### INBOX-011-AC-02 — Require positive valid shared settings
+
+- **Given** shared durable settings contain a nonpositive required duration/count, renewal at least as long as its lease, or recovery maximum below its interval.
+- **When** options validation runs.
+- **Then** invalid settings fail, and otherwise valid positive relationships are accepted.
+
+### INBOX-011-AC-03 — Do not infer installed schema from model validation
+
+- **Given** the relational model and services are configured but the database schema is missing or incompatible.
+- **When** composition validation succeeds and persistence is later attempted.
+- **Then** model validation supplies no schema certification and actual persistence can still fail.
+
+## Open decisions
+
+None.

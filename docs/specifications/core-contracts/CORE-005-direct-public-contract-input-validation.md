@@ -1,10 +1,23 @@
 # CORE-005 — Direct public contract input validation
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Unknown behaviour
-**Evidence:** Public MessageContract and custom IConsumerInvoker values can bypass AddContract/AddConsumer checks; malformed-data behavior is not uniformly guarded.
+## Intent
 
-Unknown: whether public registration records and provider-created invokers must independently enforce the extension APIs' constraints. Current validation bypass must not become an approved alternate contract.
+Extension authors need to know which registration and invocation boundaries validate identities and malformed data when they construct public records or custom invokers directly.
 
-**Open decisions:** [GAP-CORE-001](../GAPS.md#gap-core-001).
+## Guarantees
+
+- Supported extension registration and known contract/JSON mismatch handling MUST retain the guarantees of [CONFIG-003](../configuration/CONFIG-003-registration-identifier-boundaries.md), [CORE-003](CORE-003-lookup-and-dispatch-failures.md) and [CORE-004](CORE-004-durable-json-representation.md).
+
+## Contract boundaries
+
+This page concerns direct public records/custom invokers and malformed/null inputs outside those established domains. Public construction does not by itself approve bypassing registration constraints. No new direct-boundary failure timing/type is selected here.
+
+## Acceptance criteria
+
+No additional acceptance outcomes are assigned while the policy below remains unresolved.
+
+## Open decisions
+
+[GAP-CORE-001](../GAPS.md#gap-core-001): decide whether direct records/invokers enforce the extension identity domain. [GAP-CORE-008](../GAPS.md#gap-core-008): decide null invocation/default-record outcomes. Recommendations remain unapproved: define the supported direct boundary, then add clear guards without changing known permanent JSON/lookup failures.

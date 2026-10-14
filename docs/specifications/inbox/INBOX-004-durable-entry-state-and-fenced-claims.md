@@ -1,33 +1,50 @@
 # INBOX-004 — Durable entry state and fenced claims
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: `InboxEntry` and inherited `DurableStore.Claim/Renew/Complete/Retry/DeadLetter`, `DurableEntryConfiguration`. Shared paths are traced below. [Processing](../../reference/processing.md) is descriptive.
+Workers need temporary exclusive settlement authority over each unresolved target so crashes permit recovery and an obsolete worker cannot overwrite a newer attempt or a completed sibling.
 
-Contracts: IInboxStore inherited durable operations and InboxEntry identity, payload, metadata, lifecycle and diagnostic properties; Key is (MessageId, TargetId). Preconditions: Claim limit and lease positive; mappings installed. Postconditions: claims increment Attempts and clear NextAttemptAt; settlement returns a bool for ownership. Invariants: terminal rows are not eligible; target rows complete independently. ClaimedUntil equals now is expired, never valid ownership. Store ordering is creation/message/target order, not a guarantee of handler completion order.
+## Guarantees
 
-## INBOX-004-AC-01 — Claim only available due work
+- A claim MUST be bounded by the requested positive limit and lease and MUST exclude terminal work, future-due work and work still validly owned elsewhere.
+- Settlement or renewal by a mismatched or no-longer-authorized owner MUST be rejected without overwriting target state.
+- Completion and retry MUST remain independent per event/target; retry MUST preserve identity, payload and failure diagnosis.
+- Nonpositive claim limits or leases MUST fail. Successful renewal by the current unresolved owner MUST extend authority without changing identity.
 
-- **Given** pending entries include future-due, due-at-now, actively claimed, expired-at-now and terminal rows.
-- **When** Claim(now, positive limit, positive lease) completes.
-- **Then** only unresolved due work with absent/expired leases is returned, at most the limit, with a claim token, incremented Attempts and a new expiry.
+The independent basis is the [coding standards](../../CODING_STANDARDS.md), especially the cited identity, lifetime, failure and local-transaction requirements. Coding standards sections 7 and 9 establish bounded ownership, stale-owner fencing, failure preservation and per-target progress; public durable-store inputs and identity compatibility establish validation and renewal boundaries.
 
-## INBOX-004-AC-02 — Fence stale and concurrent owners
+## Contract boundaries
 
-- **Given** an entry has been reclaimed with a new token or its lease equals/exceeds expiry at settlement time.
-- **When** the stale owner attempts Renew, Complete, Retry or DeadLetter.
-- **Then** false is returned and no state is overwritten; only a matching unexpired owner can settle.
+Claims fence database transitions, not arbitrary handler execution or external effects. Due work is eligible rather than promised an execution time; selection does not imply FIFO completion. Provider concurrency and uncertain acquisition remain in [GAP-CORE-005](../GAPS.md#gap-core-005). Exact equality and abandoned-attempt accounting remain undecided.
 
-## INBOX-004-AC-03 — Keep independent target progress
+## Acceptance criteria
 
-- **Given** one logical event has several target entries.
-- **When** one owned target completes and another schedules retry.
-- **Then** only the first has ProcessedAt; the retry target retains identities/payload and diagnostics with its next due time.
+### INBOX-004-AC-03 — Keep independent target progress
 
-## INBOX-004-AC-04 — Validate claim limits and renew successful ownership
+- **Given** one logical event has multiple target entries and both attempts hold valid authority.
+- **When** one target completes while another records a retry.
+- **Then** only the successful target is completed; the retry target preserves identities, payload and diagnostics with its next due time.
 
-- **Given** invalid nonpositive limit/lease, or a matching unresolved unexpired owned row.
-- **When** Claim is requested for invalid inputs or Renew extends the owned lease.
-- **Then** invalid Claim fails; valid Renew updates the expiry and returns true without changing identities.
+### INBOX-004-AC-04 — Validate claim limits and renew successful ownership
+
+- **Given** a claim has a nonpositive limit or lease, or an unresolved owner has a matching still-valid claim.
+- **When** invalid acquisition is requested or valid renewal is requested.
+- **Then** invalid acquisition fails; successful renewal returns true with the extended expiry and unchanged identities.
+
+## Open decisions
+
+The following original acceptance identifiers remain reserved; current behavior and unapproved recommendations do not establish normative authority.
+
+### INBOX-004-AC-01 — Claim only available due work
+
+Reserved pending [GAP-CLAIM-001](../GAPS.md#gap-claim-001), [GAP-CLAIM-002](../GAPS.md#gap-claim-002). The original composite includes exact due/lease equality and one attempt increment per acquisition. Bounded acquisition, terminal/future-due exclusion and existing-owner protection remain established, but temporal equality and attempt accounting need approval.
+
+The complete original identifier remains reserved, not reassigned to its supported subset. Restore it only on approval of its original obligation, or approve an explicit split/replacement under new identifiers.
+
+### INBOX-004-AC-02 — Fence stale and concurrent owners
+
+Reserved pending [GAP-CLAIM-002](../GAPS.md#gap-claim-002). The original stale-owner criterion also chooses rejection at exact lease expiry. Stale or mismatched ownership remains fenced; exact equality requires a consistent eligibility/settlement decision rather than reassignment of this composite.
+
+The complete original identifier remains reserved, not reassigned to its supported subset. Restore it only on approval of its original obligation, or approve an explicit split/replacement under new identifiers.

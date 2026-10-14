@@ -2,36 +2,47 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** SagaOptions.SerializerOptions independently configure state JSON. Durable message payload serialization uses registered message contracts; numeric Version is optimistic concurrency, not JSON schema version.
+Workflow hosts need retained state to remain interpretable across recovery and deployment without confusing state concurrency with schema evolution.
 
-**Evidence:** SagaStateSerializer.cs; SagaAttempt.cs; SagaRuntime.cs; SagaEntry.cs; shared IMessageSerializer.
+The state/message compatibility and durable contract standards, SagaOptions state serializer and public SagaSerializationException establish serialization and rejection boundaries. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Intent gaps:** [GAP-WF-015](../GAPS.md#gap-wf-015).
+## Guarantees
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+- Successful state changes MUST round-trip through the configured state serializer, separately from message payload configuration.
+- Uninterpretable active state MUST surface a permanent serialization failure rather than a successful transition; terminal replay MUST not require purged state.
 
-## SAGA-007-AC-01 — State mutations round-trip using state options
+## Contract boundaries
 
-**Given** active valid state and configured JSON options.
-**When** handler mutates state and owner commits then later continues.
-**Then** the persisted JSON can reconstruct that configured state and its committed mutations; outgoing serializer options are not implicitly the state options.
+Host state/contract compatibility is required for retained work. No automatic migration is supplied; selecting supported schema evolution remains GAP-WF-015. Concurrency Version is not a schema version.
 
-## SAGA-007-AC-02 — Malformed null or unsupported state is permanent
+## Acceptance criteria
 
-**Given** retained active state JSON is malformed/null or state serialization is unsupported.
-**When** state deserialize/serialize is attempted.
-**Then** saga.serialization.failed is permanent, with no successful owner state/effects transition.
+### SAGA-007-AC-01 — State mutations round-trip using state options
 
-## SAGA-007-AC-03 — Retained type and message compatibility are required
+**Given** an active workflow uses configured state JSON options and a handler successfully mutates state.
+**When** the owner commits and later processing reads the state.
+**Then** the mutation round-trips through those state options, independently of the message serializer’s options.
 
-**Given** retained active saga type/JSON or timer contract no longer resolves compatibly.
-**When** execution is attempted.
-**Then** the corresponding definition/state/message error fails rather than automatically migrating, upcasting or inventing a replacement state.
+### SAGA-007-AC-02 — Malformed null or unsupported state is permanent
 
-## SAGA-007-AC-04 — Terminal replay does not need purged state
+**Given** active state is malformed, deserializes null or is unsupported by its configured serializer.
+**When** the runtime interprets or serializes it.
+**Then** SagaSerializationException exposes saga.serialization.failed/Fault rather than a successful transition.
 
-**Given** terminal saga state is the tombstone JSON null.
-**When** same-start replay, terminal continuation or terminal timer is handled.
-**Then** the terminal no-op path does not reopen or require reconstructing purged state.
+### SAGA-007-AC-03 — Retained type and message compatibility are required
+
+**Given** a deployment must process retained saga types, state and message contracts.
+**When** retained active work is interpreted.
+**Then** an incompatible retained definition, state or message exposes its corresponding interpretation error rather than automatically migrating, upcasting or inventing replacement state; compatible schemas remain host-owned and numeric Version is not a migration mechanism.
+
+### SAGA-007-AC-04 — Terminal replay does not need purged state
+
+**Given** a terminal workflow’s payload state has been purged.
+**When** same-start replay or terminal continuation arrives.
+**Then** terminal replay/no-op behavior does not reconstruct the purged state or reopen the workflow.
+
+## Open decisions
+
+Separate boundary questions remain unapproved in the [decision register](../GAPS.md): `GAP-WF-015`. These do not suspend the independently justified guarantees above.

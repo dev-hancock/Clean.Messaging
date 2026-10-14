@@ -1,33 +1,40 @@
 # DOMAIN-008 — Custom source collisions and acknowledgement failures
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: capture-type/event-ID dedup across tracked sources, event-ID-only callback dictionary and synchronous postcommit callbacks. [GAP-DUR-010](../GAPS.md#gap-dur-010), [GAP-DUR-009](../GAPS.md#gap-dur-009). Interface XML provides no uniqueness/nonthrowing/concurrency contract.
+Application-defined sources are an extension boundary where colliding IDs or acknowledgement errors can leave facts pending despite committed outgoing state. Applications must be able to reason about that irreversible commit without mistaking callback success for database durability.
 
-Purpose: expose risks at the source extension boundary. Preconditions for current normal behaviour: distinct stable IDs across sources and nonthrowing acknowledgement with stable enumeration. Current integration does not enforce these conditions. Postcommit callback failure cannot undo committed domain/outbox state and may interrupt later acknowledgements, wake and tracker cleanup. Duplicate IDs across sources suppress later source capture/ack; source order is not approved conflict resolution.
+## Guarantees
 
-## DOMAIN-008-AC-01 — Observe duplicate IDs across tracked sources
+- A postcommit acknowledgement error MUST NOT be interpreted as undoing application changes or outgoing targets already committed.
+- Ordinary capture acknowledgement MUST denote local capture commit, not a downstream delivery receipt.
 
-- **Given** two sources supply the same event ID, possibly different payloads.
-- **When** capture scans both inside one transaction.
-- **Then** only the first authorized capture contributes work/ack; the second can remain pending, without a payload-conflict error or global durable dedup guarantee.
+## Contract boundaries
 
-## DOMAIN-008-AC-02 — Expose throwing acknowledgement after commit
+The application owns custom source behavior. This specification does not choose first-source-wins, collision rejection, collection snapshotting, acknowledgement removal validation, callback isolation/retry or error visibility during reconciliation. No durable callback ledger is established by the pending-event interface.
 
-- **Given** custom source Acknowledge throws and other sources also have callbacks.
-- **When** owning transaction has committed and callbacks run.
-- **Then** durable state can coexist with pending source events and interrupted later callbacks/wake; error does not imply transaction rollback.
+## Acceptance criteria
 
-## DOMAIN-008-AC-03 — Do not infer retry-safe custom acknowledgement
+The original criteria are reserved below pending decisions; none is an unconditional acceptance requirement.
 
-- **Given** a custom source removes more facts, does nothing or mutates collection during acknowledgement.
-- **When** normal callback invokes its Acknowledge.
-- **Then** integration does not independently verify event removal or enforce AggregateRoot semantics; observable results depend on the custom source.
+## Open decisions
 
-## DOMAIN-008-AC-04 — Preserve observed ambiguity of callback error handling
+These original identifiers and heading anchors remain reserved, not normative scenarios. No replacement IDs are assigned before the underlying policy and identity migration are decided.
 
-- **Given** custom acknowledgement throws during commit-failure reconciliation after outgoing keys were verified.
-- **When** the enclosing transaction-failure catch handles it.
-- **Then** the callback error can be swallowed into unknown tracker state rather than universally surfaced; committed rows and unacknowledged source facts may coexist.
+### DOMAIN-008-AC-01 — Observe duplicate IDs across tracked sources
+
+Reserved — [GAP-DUR-010](../GAPS.md#gap-dur-010). First-source capture and suppression of a colliding source are not an approved conflict policy.
+
+### DOMAIN-008-AC-02 — Expose throwing acknowledgement after commit
+
+Reserved — [GAP-DUR-009](../GAPS.md#gap-dur-009). The original composite couples irreversible committed state with interrupted callbacks/wake. Irreversibility remains a guarantee; the entire ID is reserved pending callback policy.
+
+### DOMAIN-008-AC-03 — Do not infer retry-safe custom acknowledgement
+
+Reserved — [GAP-DUR-010](../GAPS.md#gap-dur-010). Whether the extension requires identity-specific, retry-safe removal or validates a custom acknowledgement remains undecided.
+
+### DOMAIN-008-AC-04 — Preserve observed ambiguity of callback error handling
+
+Reserved — [GAP-DUR-009](../GAPS.md#gap-dur-009). Swallowing a callback error into unknown tracker state is not an approved error-visibility policy.

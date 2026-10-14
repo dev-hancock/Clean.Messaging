@@ -2,42 +2,53 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** SagaId.Value/New/D-format text; SagaKey.Value/From/preserved text. Ordinary correlation uses the configured function, not message CorrelationId. Uniqueness is persisted (Type,Key), including terminal records.
+Workflow authors need a durable type/key identity independent of transport metadata and instance IDs so replay and concurrency cannot merge unrelated workflows.
 
-**Evidence:** SagaId.cs; SagaKey.cs; SagaProcessor.cs; SagaRuntime.cs; SagaConfiguration.cs.
+Public SagaKey/value descriptions and the identity/correlation standards establish text preservation and stable retained logical identity; persistent equality remains a separate provider decision. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Intent gaps:** [GAP-WF-001](../GAPS.md#gap-wf-001), [GAP-WF-007](../GAPS.md#gap-wf-007), [GAP-WF-011](../GAPS.md#gap-wf-011).
+## Guarantees
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+- Valid SagaKey values MUST preserve exact nonblank text, including Unicode, within the supported 500-character bound.
+- Ordinary routing MUST use configured key correlation and a durable trigger MessageId; retained type/key identity MUST remain unique even after terminal payload purge.
 
-## SAGA-004-AC-01 — Key boundaries preserve Unicode and exact text
+## Contract boundaries
 
-**Given** nonblank Unicode/text keys at 500 characters, blank/null and 501 characters.
-**When** SagaKey constructor or From is used.
-**Then** 500 characters are accepted unchanged including Unicode; blank/null and 501 reject; no trim/case-normalisation is implied.
+CorrelationId is metadata, not the saga key. Default struct admission and persisted collation are unresolved. Retained uniqueness is conditional on the identity record existing, not a promise of indefinite storage.
 
-## SAGA-004-AC-02 — Instance identity formatting
+## Acceptance criteria
 
-**Given** new and directly supplied SagaId values including Guid.Empty.
-**When** Value and ToString are read.
-**Then** Value is preserved and text uses GUID D format; New supplies a nonempty GUID, not a correlation key.
+### SAGA-004-AC-01 — Key boundaries preserve Unicode and exact text
 
-## SAGA-004-AC-03 — Correlation function chooses workflow
+**Given** null/blank or 501-character text and valid nonblank Unicode text up to 500 characters.
+**When** SagaKey is constructed directly or through From.
+**Then** invalid text is rejected and valid text is preserved without trimming or case normalization.
 
-**Given** two messages share metadata CorrelationId but correlate to different keys or conversely.
-**When** ordinary durable saga handling occurs.
-**Then** the definition-specific key controls instance lookup; metadata correlation does not merge or split instances by itself.
+### SAGA-004-AC-03 — Correlation function chooses workflow
 
-## SAGA-004-AC-04 — Ordinary message needs durable trigger identity
+**Given** message metadata correlation and definition keys do not correspond one-to-one.
+**When** ordinary saga routing occurs.
+**Then** the definition’s correlation key chooses the workflow; metadata alone neither merges nor splits instance identities.
 
-**Given** no message MessageId is in the execution context.
-**When** ordinary saga consumer handling is attempted.
-**Then** handling rejects the absent durable trigger identity instead of inventing a start identity.
+### SAGA-004-AC-04 — Ordinary message needs durable trigger identity
 
-## SAGA-004-AC-05 — Terminal key still occupies durable identity
+**Given** ordinary processing has no durable trigger MessageId in its execution context.
+**When** saga handling is attempted.
+**Then** the absent identity is rejected rather than inventing a replacement start identity.
 
-**Given** an active or terminal row has a type/key.
-**When** another start tries the same type/key.
-**Then** the retained unique identity prevents a second committed row, even if payload state was purged.
+### SAGA-004-AC-05 — Terminal key still occupies durable identity
+
+**Given** a type/key identity is retained in an active, terminal or payload-purged record.
+**When** a competing start seeks the same retained identity.
+**Then** a second workflow row cannot commit for that identity; purge of payload alone does not free it.
+
+## Open decisions
+
+Separate boundary questions remain unapproved in the [decision register](../GAPS.md): `GAP-WF-001`, `GAP-WF-007`, `GAP-WF-011`. These do not suspend the independently justified guarantees above.
+
+### SAGA-004-AC-02 — Instance identity formatting
+
+**Reserved — no normative acceptance scenario.** Is acceptance/formatting of directly constructed empty identity values and empty SagaCancel an intentional compatibility contract?
+
+Decision: [GAP-INTENT-WF-006](../GAPS.md#gap-intent-wf-006) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.

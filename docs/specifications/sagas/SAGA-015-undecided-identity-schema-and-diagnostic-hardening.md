@@ -2,40 +2,59 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Proposed behaviour
+## Intent
 
-**Contracts and applicability:** Proposals require approval, not compatibility obligations: revalidate default SagaKey; define persisted equality; validate Fail consistently; constrain collision translation; define unsaved repeated-start handling and retained schema migration policy.
+Hosts need explicit policy for default keys, persistent equality, diagnostics, collision proof, unsaved starts and retained schema evolution before relying on hardening guarantees.
 
-**Evidence:** GAP-WF-001, GAP-WF-007, GAP-WF-008, GAP-WF-009, GAP-WF-012, GAP-WF-015; SagaKey, SagaResult, SagaConflictResolver, SagaStore and state serializer.
+The standards on valid inputs, retained identity and schema compatibility establish the obligation to expose these unresolved boundaries, not a particular proposed implementation. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+## Guarantees
 
-## Question SAGA-015-Q-01 ? — Default key admission policy
+- Retained workflow identity MUST not be silently replaced by a different logical start.
+- Concurrency Version MUST not be represented as automatic schema migration or proof of compatibility.
 
-**Scenario:** correlation returns default(SagaKey) bypassing constructor validation. admission hardening is approved.
-**Policy question:** Should the following conditional proposal be adopted: only if GAP-WF-001 approves revalidation, handling rejects the invalid key before durable creation; current code does not promise this rejection.
+## Contract boundaries
 
-## Question SAGA-015-Q-02 ? — Persisted equality policy
+The questions below do not approve ordinal persisted collation, default-key rejection, Fail validation, new collision translation or same-scope replay handling.
 
-**Scenario:** keys/types differ only by case or provider collation treatment. a supported equality policy is chosen.
-**Policy question:** Should the following conditional proposal be adopted: only if GAP-WF-007 approves ordinal persisted semantics, those identities remain distinct consistently across providers; current collation is provider-owned.
+## Acceptance criteria
 
-## Question SAGA-015-Q-03 ? — Fail diagnostic consistency policy
+No acceptance criteria are assigned to the unresolved policies on this page. The cross-cutting guarantees above do not decide those policies.
 
-**Scenario:** Fail receives invalid diagnostic values. GAP-WF-008 chooses validation parity.
-**Policy question:** Should the following conditional proposal be adopted: only under that decision, malformed Fail rejects before applying state/effects using agreed 200/500 bounds; this is not current validated behaviour.
+## Open decisions
 
-## Question SAGA-015-Q-04 ? — Narrow collision translation policy
+### Question SAGA-015-Q-01 ? — Default key admission policy
 
-**Scenario:** unrelated DbUpdateException has one added start and a coincidental persisted winner. translation hardening is selected.
-**Policy question:** Should the following conditional proposal be adopted: only if GAP-WF-009 restricts translation to proven identity collisions, the unrelated original error remains; current matching is not unique-error-code-specific.
+**Reserved — no normative acceptance scenario.** Where are default ScheduleTarget and SagaKey values rejected, and what failure is exposed?
 
-## Question SAGA-015-Q-05 ? — Unsaved repeated-start policy
+Decision: [GAP-WF-001](../GAPS.md#gap-wf-001) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
 
-**Scenario:** two starts for one type/key are handled in one scope before save. GAP-WF-012 defines tracked-new-instance semantics.
-**Policy question:** Should the following conditional proposal be adopted: only under the selected policy, the second operation either observes tracked start replay/conflict or deliberately fails the unit of work; current persisted query does not explicitly merge added rows.
+### Question SAGA-015-Q-02 ? — Persisted equality policy
 
-## Question SAGA-015-Q-06 ? — State evolution policy
+**Reserved — no normative acceptance scenario.** Is equality of persisted type/key provider-independent or part of supported database collation?
 
-**Scenario:** retained state/message schemas differ from a new deployment. GAP-WF-015 selects compatibility or migration approach.
-**Policy question:** Should the following conditional proposal be adopted: only under the selected policy, compatible work remains interpretable or an explicit migration/rejection occurs; numeric Version is not an automatic schema migration mechanism.
+Decision: [GAP-WF-007](../GAPS.md#gap-wf-007) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### Question SAGA-015-Q-03 ? — Fail diagnostic consistency policy
+
+**Reserved — no normative acceptance scenario.** What admission behavior applies to null, blank and overlong SagaResult.Fail diagnostics?
+
+Decision: [GAP-WF-008](../GAPS.md#gap-wf-008) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### Question SAGA-015-Q-04 ? — Narrow collision translation policy
+
+**Reserved — no normative acceptance scenario.** What evidence permits translating a save failure into same-start race, conflict or closed outcomes?
+
+Decision: [GAP-WF-009](../GAPS.md#gap-wf-009) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### Question SAGA-015-Q-05 ? — Unsaved repeated-start policy
+
+**Reserved — no normative acceptance scenario.** What result applies to repeated starts for one type/key before the owning save?
+
+Decision: [GAP-WF-012](../GAPS.md#gap-wf-012) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### Question SAGA-015-Q-06 ? — State evolution policy
+
+**Reserved — no normative acceptance scenario.** Which retained state/message evolution scenarios are supported, and who migrates or rejects incompatible data?
+
+Decision: [GAP-WF-015](../GAPS.md#gap-wf-015) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.

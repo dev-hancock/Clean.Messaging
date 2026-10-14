@@ -1,27 +1,38 @@
 # DOMAIN-001 — Raise pending events without owning business policy
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: AggregateRoot.Raise<TEvent>, explicit IDomainEventSource.Events/Acknowledge and RaisedEvent record; domain core project is dependency-free. [Domain events](../../reference/domain-events.md) and architecture are descriptive.
+Application aggregates need to record the facts their own business rules select, so persistence can capture those facts later. Raising records pending work; it does not execute consumers or substitute library policy for the application’s domain.
 
-Purpose: record in-memory facts selected by a consuming domain. Contracts: public abstract AggregateRoot, protected Raise<TEvent>(notnull), IDomainEventSource.Events and Acknowledge(Guid), RaisedEvent.Id/Message. Preconditions: nonnull raised payload. Postcondition: new nonempty Guid and payload are appended to a live read-only-view collection in raising order. No persistence key, timestamp, event store, business invariant, direct handler execution or event-sourcing protocol is owned here. Custom record/source construction is not validated by the record.
+## Guarantees
 
-## DOMAIN-001-AC-01 — Record separate raised facts
+- Each valid Raise MUST record a separate pending fact with a generated nonempty event identity and the supplied payload, preserving raising order.
+- Raise MUST reject a null payload without adding a fact. Raising MUST NOT invoke consumers, persist state or publish externally.
 
-- **Given** an AggregateRoot subclass raises a valid payload twice.
-- **When** pending Events are read through IDomainEventSource.
-- **Then** two entries carry separate generated nonempty IDs and payload references in order; no consumer is invoked by Raise.
+## Contract boundaries
 
-## DOMAIN-001-AC-02 — Reject null raised payload
+This contract belongs to the supplied AggregateRoot. Its protected Raise operation and IDomainEventSource view expose pending facts, not an event store, entity key or business-state model. Payload references remain application-owned; immutable domain snapshots are not created automatically. Custom source validation and the lifetime of a previously obtained collection view are separate extension-contract questions.
 
-- **Given** an AggregateRoot subclass attempts Raise with null.
-- **When** Raise runs.
-- **Then** it throws and adds no pending event.
+## Acceptance criteria
 
-## DOMAIN-001-AC-03 — Expose live pending collection
+### DOMAIN-001-AC-01 — Record separate raised facts
 
-- **Given** a caller obtained the Events read-only view before another Raise or acknowledgement.
-- **When** it observes the view afterward.
-- **Then** the view reflects current pending events rather than an immutable snapshot; no concurrent mutation safety is promised.
+- **Given** an aggregate raises the same valid payload twice.
+- **When** the application reads its pending events.
+- **Then** two pending facts have separate generated nonempty IDs, the supplied payload references and raising order; raising has invoked no consumer.
+
+### DOMAIN-001-AC-02 — Reject null raised payload
+
+- **Given** an aggregate attempts to raise a null payload.
+- **When** Raise is called.
+- **Then** the call throws and its pending events remain unchanged.
+
+## Open decisions
+
+These original identifiers and heading anchors remain reserved, not normative scenarios. No replacement IDs are assigned before the underlying policy and identity migration are decided.
+
+### DOMAIN-001-AC-03 — Expose live pending collection
+
+Reserved — [GAP-DUR-010](../GAPS.md#gap-dur-010). Whether a previously obtained Events view must stay live rather than become a snapshot remains reserved. Neither interface collection shape nor single-owner state establishes that lifetime promise.

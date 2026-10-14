@@ -1,33 +1,50 @@
 # OUTBOX-003 — Target validation, local selection and empty batches
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: IOutboxTargetProvider.GetTargets, OutboxTarget, OutboxTargetProvider, LocalTransport.Name, factory validation and OutboxWriter.Stage. [GAP-DUR-006](../GAPS.md#gap-dur-006) covers external-only default selection.
+Hosts need target identities that distinguish independent obligations and survive persistence, without forcing provider-neutral routing to understand each transport's destination protocol.
 
-Contracts: GetTargets(Type messageType, object message); target ID/transport/destination; local transport name "local". Target IDs: nonblank <=200 ASCII, unique ordinally across the whole batch even across transports; transport nonblank. Destination and transport lengths/grammar are not comprehensively checked in the factory. Default local provider uses exact-type consumer Get and throws if none even when external providers could supply work. A custom composition may return no targets, producing IsEmpty true and no-op Stage.
+## Guarantees
 
-## OUTBOX-003-AC-01 — Validate target boundary and duplicates
+- Target IDs MUST be nonblank ASCII values no longer than 200 characters; transport identity MUST be nonblank.
+- Duplicate target IDs within one outgoing batch MUST fail even if their transport or destination differs. Ordinal case-distinct target IDs MUST remain distinct.
+- Persisted target/transport/destination MUST remain a snapshot; successful target completion MUST not depend on sibling target progress.
+- Provider-specific destination interpretation MUST remain owned by the appropriate integration rather than introduce protocol coupling into neutral routing.
 
-- **Given** targets contain blank, 201-character or non-ASCII IDs, blank transport, or duplicate ordinal TargetIds across routes.
-- **When** Create evaluates the complete target set.
-- **Then** invalid IDs/transports fail; duplicate target identity fails independent of destination or transport; distinct case-sensitive IDs remain distinct.
+The independent basis is the [coding standards](../../CODING_STANDARDS.md), especially the cited identity, lifetime, failure and local-transaction requirements. Persisted target identity/schema compatibility and coding standards sections 9 and 14 establish nonblank stable identities, bounded ASCII target keys and ordinal uniqueness; architecture assigns protocol mechanics to transport integrations.
 
-## OUTBOX-003-AC-02 — Do not infer transport or destination schema validation
+## Contract boundaries
 
-- **Given** a nonblank unusually long transport or null/blank/custom destination and otherwise valid target.
-- **When** factory creates a batch.
-- **Then** factory does not itself reject by destination semantics or transport maximum length; provider mapping/persistence/delivery may reject later.
+Target ID is the per-event obligation identity, not merely a route display label. This contract does not approve the current omission of transport length or destination checks, default local failure for external-only messages, or silent targetless staging. Shared persisted-field requirements and provider-specific destination semantics are different validation concerns.
 
-## OUTBOX-003-AC-03 — Observe external-only default local failure
+## Acceptance criteria
 
-- **Given** a payload has no exact-type local consumers but an external provider could supply targets and the default local provider remains installed.
-- **When** Create/Enqueue enumerates providers.
-- **Then** consumer.message_unhandled fails staging; external provider availability alone does not make default composition external-only.
+### OUTBOX-003-AC-01 — Validate target boundary and duplicates
 
-## OUTBOX-003-AC-04 — Stage an empty custom batch without work
+- **Given** a batch has a blank, non-ASCII or overlong target ID, a blank transport, duplicate ordinal target IDs across routes, or otherwise-valid case-distinct IDs.
+- **When** target staging validates the batch.
+- **Then** invalid identities and ordinal duplicates fail, while case-distinct target IDs remain distinct obligations.
 
-- **Given** a custom provider composition returns no targets and serialization succeeds.
-- **When** factory and writer Stage run.
-- **Then** IsEmpty is true and no entries are added; empty batch staging is not external delivery.
+## Open decisions
+
+The following original acceptance identifiers remain reserved; current behavior and unapproved recommendations do not establish normative authority.
+
+### OUTBOX-003-AC-02 — Do not infer transport or destination schema validation
+
+Reserved pending [GAP-INTENT-DUR-001](../GAPS.md#gap-intent-dur-001) (unapproved route-validation decision). Protocol-specific destination interpretation remains provider-owned. The original omission of comprehensive transport-name/destination checks also selects validation timing for portable persisted constraints; that permissiveness is not independently approved.
+
+The complete original identifier remains reserved, not reassigned to its supported subset. Restore it only on approval of its original obligation, or approve an explicit split/replacement under new identifiers.
+
+### OUTBOX-003-AC-03 — Observe external-only default local failure
+
+Reserved pending [GAP-DUR-006](../GAPS.md#gap-dur-006). Requiring default local lookup to fail even when external targets exist is not an approved external-only routing policy. Decide whether local absence is a configuration failure or simply no local obligation.
+
+The complete original identifier remains reserved, not reassigned to its supported subset. Restore it only on approval of its original obligation, or approve an explicit split/replacement under new identifiers.
+
+### OUTBOX-003-AC-04 — Stage an empty custom batch without work
+
+Reserved pending [GAP-DUR-006](../GAPS.md#gap-dur-006). Treating a custom targetless batch as a successful no-op needs an explicit validity and capture-responsibility decision; representability of an empty batch does not approve silent loss of outgoing intent.
+
+The complete original identifier remains reserved, not reassigned to its supported subset. Restore it only on approval of its original obligation, or approve an explicit split/replacement under new identifiers.

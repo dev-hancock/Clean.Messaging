@@ -1,14 +1,34 @@
 # MQTT-014 — Observable logs do not overstate settlement
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) | [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
-**Evidence:** source-generated events in [MqttInboxWorker](../../../src/Clean.Messaging.Inbox.Ingress.Mqtt/Runtime/MqttInboxWorker.cs), outgoing source inventory and shared [OutboxProcessor](../../../src/Clean.Messaging.Outbox/Runtime/OutboxProcessor.cs).
+## Intent
 
-Inbox events: 1 Information connected Host/Port/RouteCount; 2 Warning setup failure Host/Port/exception; 3 Error poison Topic/exception before acknowledgement (wording says already acknowledged); 4 Warning poison ack failure Topic/exception; 5 Error admission/normal ack failure Topic/exception; 6 Debug disconnect failure (wording mentions shutdown also in reconnect cleanup). Outgoing has no dedicated MQTT metrics/logger in the audited adapter; shared durable metrics/logs describe local outcomes, not subscriber effects.
+Operators need setup, admission, ACK and cleanup diagnostics that distinguish attempted transitions from confirmed protocol or consumer success.
 
-## MQTT-014-AC-01 — Poison logging can precede a failed acknowledgement
-**Given** poison input and failing acknowledgement, **When** receive handles it, **Then** event 3 is observable before event 4 and no successful acknowledgement is implied by database/broker evidence; event 3's current wording is misleading rather than proof of success. See [GAP-TX-007](../GAPS.md#gap-tx-007).
+Authority: Coding standards on meaningful truthful diagnostics and delivery/settlement boundaries establish outcomes. Exact event IDs, levels/fields and misleading pre-ACK wording are not independently approved promises. See [coding standards](../../CODING_STANDARDS.md).
 
-## MQTT-014-AC-02 — Connection and admission diagnostics retain their operational boundary
-**Given** setup failure, ordinary admission/ack failure, or disconnect cleanup failure, **When** the worker logs it, **Then** the corresponding levels/fields above identify setup, receipt or cleanup rather than claiming consumer completion; outgoing durable completion metrics cannot prove subscriber application effects.
+## Guarantees
+
+- Diagnostics MUST distinguish attempted acknowledgement from confirmed success. Admission/broker publication MUST NOT be presented as consumer/subscriber completion.
+- Setup, receipt and cleanup failures MUST remain attributable to their operational boundaries with useful causes.
+
+## Contract boundaries
+
+Diagnostic text is not broker/database evidence. Attempt logs cannot establish rejected/failed ACK or settlement success. Detailed event contracts need explicit authority before acceptance IDs encode them.
+
+## Acceptance criteria
+
+No acceptance scenarios are assigned to unresolved choices below.
+
+## Open decisions
+
+The original IDs and exact heading anchors below remain reserved, not normative scenarios. No replacement IDs are assigned before a decision.
+
+### MQTT-014-AC-01 — Poison logging can precede a failed acknowledgement
+
+How must ACK attempt/result logs remain truthful? Reserve original event-order/misleading-wording composite, not an ID silently narrowed to new truthful-result scenarios. See [GAP-TX-007](../GAPS.md#gap-tx-007); the recommendation remains unapproved.
+
+### MQTT-014-AC-02 — Connection and admission diagnostics retain their operational boundary
+
+Which levels/fields are deliberate operator compatibility contracts, and how must setup/receipt/cleanup wording avoid false completion? Reserve the exact-inventory composite. See [GAP-TX-007](../GAPS.md#gap-tx-007); the recommendation remains unapproved.

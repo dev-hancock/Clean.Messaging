@@ -2,48 +2,57 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** UseQuartzScheduling(Action<IQuartzBuilder>?) replaces the scheduling engine, uses the default unkeyed scheduler, and integrates Quartz hosting. Quartz contains a replacement wake hint, not one durable job per message.
+Hosts optionally using Quartz need wake assistance without transferring durable schedule ownership to Quartz jobs.
 
-**Evidence:** Scheduling.Quartz/DependencyInjection.cs; SchedulingEngine.cs; SchedulingWakeJob.cs. Quartz 4.0.1 host lifecycle is a dependency boundary, not a tested broker/cluster guarantee.
+UseQuartzScheduling is an explicit public host-composition adapter; provider separation, durable discovery and cooperative cancellation standards establish the bounded role of the adapter. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Intent gaps:** [GAP-WF-005](../GAPS.md#gap-wf-005).
+## Guarantees
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+- Quartz wake integration MUST retain durable schedule storage/execution as the owner of payload delivery.
+- The adapter MUST use the host’s existing default scheduler when supplied, preserve cooperative cancellation and retain local recovery when Quartz scheduling reports an ordinary failure.
 
-## SCHED-014-AC-01 — Existing default scheduler is reused
+## Contract boundaries
 
-**Given** an unkeyed default IScheduler already exists.
-**When** Quartz scheduling is composed.
-**Then** scheduling uses that default scheduler; configuration is applied to unnamed/default composition rather than replacing it with message-specific jobs.
+Quartz storage, clustering, misfires and deployment lifecycle belong to the host/dependency. Local fallback after throwing I/O is not a guarantee for hung I/O. Exact per-wait reconnect cadence remains undecided.
 
-## SCHED-014-AC-02 — Wake hint does not own scheduled payload
+## Acceptance criteria
 
-**Given** multiple persisted schedules become due.
-**When** Quartz wake executes.
-**Then** durable processing still selects from schedule storage; the hint does not contain or complete each scheduled payload.
+### SCHED-014-AC-01 — Existing default scheduler is reused
 
-## SCHED-014-AC-03 — Normal Quartz failure uses local fallback
+**Given** the host already supplies an unkeyed default IScheduler.
+**When** Quartz scheduling integration is composed.
+**Then** that scheduler is reused and configuration applies to the default composition, not a new per-message scheduling service.
 
-**Given** a future Wait whose Quartz scheduling operation throws without caller cancellation.
-**When** time or a local wake arrives.
-**Then** the failure is logged and local timing/wake can release Wait so durable polling remains possible.
+### SCHED-014-AC-02 — Wake hint does not own scheduled payload
 
-## SCHED-014-AC-04 — Later waits retry restored service
+**Given** multiple durable schedules are due.
+**When** a Quartz wake executes.
+**Then** the wake carries no individual payload ownership or completion; due processing still obtains work from durable scheduling storage.
 
-**Given** a prior Quartz scheduling failure and a subsequently restored service.
-**When** another future Wait occurs.
-**Then** scheduling is attempted again; no adapter reconnect guarantee or permanently disabled state is implied.
+### SCHED-014-AC-03 — Normal Quartz failure uses local fallback
 
-## SCHED-014-AC-05 — Caller cancellation propagates through adapter
+**Given** Quartz scheduling for a future wait reports an ordinary non-cancellation failure.
+**When** the local wake or due instant arrives.
+**Then** availability failure is reported diagnostically and local waiting can release discovery; Quartz availability alone does not erase durable work.
 
-**Given** caller cancels during scheduler I/O or waiting.
-**When** Wait observes cancellation.
-**Then** cancellation propagates rather than being hidden as an ordinary Quartz availability warning.
+### SCHED-014-AC-05 — Caller cancellation propagates through adapter
 
-## SCHED-014-AC-06 — Shutdown waits for hosted jobs cooperatively
+**Given** the caller token is cancelled during scheduler I/O or a future wait.
+**When** the operation observes that cancellation.
+**Then** cancellation propagates instead of being hidden as ordinary Quartz unavailability.
 
-**Given** Quartz hosted integration has an executing wake job.
-**When** the host shuts down.
-**Then** hosting is configured to wait for jobs to complete; durable work recovery still depends on persisted state and cooperative cancellation, not forced job termination.
+### SCHED-014-AC-06 — Shutdown waits for hosted jobs cooperatively
+
+**Given** Quartz wake jobs are executing in the adapter’s hosted composition.
+**When** the host initiates shutdown.
+**Then** hosting is configured to wait for jobs cooperatively; persisted recovery remains independent of forced termination or guaranteed completion at shutdown.
+
+## Open decisions
+
+### SCHED-014-AC-04 — Later waits retry restored service
+
+**Reserved — no normative acceptance scenario.** What happens to pre-cancelled already-due waits, and must every later future wait reattempt Quartz scheduling? Does a hung Quartz operation need a bounded or concurrent local fallback?
+
+Decision: [GAP-INTENT-WF-005](../GAPS.md#gap-intent-wf-005), [GAP-WF-005](../GAPS.md#gap-wf-005) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.

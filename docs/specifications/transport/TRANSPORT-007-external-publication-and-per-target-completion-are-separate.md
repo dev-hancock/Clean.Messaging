@@ -1,19 +1,50 @@
 # TRANSPORT-007 — External publication and per-target completion are separate
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) | [Specification index](../INDEX.md)
 
-**Classification:** Required behaviour
-**Normative basis:** coding standards §§8, 9 (inbox/outbox and claims); repository instructions preserve per-target completion, leases and transaction boundaries and prohibit exactly-once claims.
-**Source evidence:** dependency [OutboxEnvelope](../../../src/Clean.Messaging.Outbox/Transport/OutboxEnvelope.cs), [transport wrapper](../../../src/Clean.Messaging.Outbox/Transport/OutboxTransport.cs), [dispatcher](../../../src/Clean.Messaging.Outbox/Delivery/OutboxDispatcher.cs), [durable store](../../../src/Clean.Messaging.EntityFrameworkCore/DurableStore.cs), [processor](../../../src/Clean.Messaging.Outbox/Runtime/OutboxProcessor.cs).
+## Intent
 
-## TRANSPORT-007-AC-01 — Failed publication does not record successful completion
-**Given** a claimed outgoing target, **When** its external transport fails before returning success, **Then** successful completion is not recorded for that target; durable failure handling owns retry/fault classification separately from mapping and publication.
+Applications need target progress tied to transport outcomes without pretending external publication joins their database transaction. Partial fan-out and abandoned ownership remain independently recoverable.
 
-## TRANSPORT-007-AC-02 — Publication success followed by lost settlement can repeat
-**Given** a publication that succeeds but whose database completion does not persist, **When** recovery claims the unresolved retained target, **Then** another publication can occur with the same stored identities; the library does not report the first external effect as rolled back or exactly-once.
+Authority: Coding standards and repository instructions explicitly require separate external/local boundaries, identity preservation, fencing, per-target progress and no exactly-once external-effect claim. See [coding standards](../../CODING_STANDARDS.md).
 
-## TRANSPORT-007-AC-03 — Stale ownership cannot complete another attempt
-**Given** an old claim expired and a newer owner acquired the target, **When** the old external attempt returns and tries to settle, **Then** its completion is rejected by claim/lease checks and the new owner's durable state is not completed by that old claim, even though the old publication may already have occurred.
+## Guarantees
 
-## TRANSPORT-007-AC-04 — Sibling completion is independent
-**Given** one completed target and one unresolved target in a retained outgoing batch, **When** the unresolved target retries or faults, **Then** that operation does not reset/reinvoke the completed sibling merely because the batch is not wholly successful; no atomic all-target external effect is asserted.
+- Failed external publication MUST NOT complete its durable target. Failure/retry settlement MUST remain separate from publication.
+- Recovery of unresolved publication MUST preserve stored identities and permit repetition without representing external effects as rolled back.
+- Only current settlement authority MUST complete a target; a stale owner MUST NOT overwrite another attempt.
+- Failure/retry of one target MUST NOT reset or reinvoke an independently completed retained sibling.
+
+## Contract boundaries
+
+The configured transport defines publication success; success does not prove recipient application effects. Publication and completion are separate; accepted publication can repeat after failure/cancellation/uncertain settlement. Retention and retry/claim policy bound recovery. Fencing cannot revoke an issued external effect.
+
+## Acceptance criteria
+
+### TRANSPORT-007-AC-01 — Failed publication does not record successful completion
+
+- **Given** an owned target.
+- **When** publication fails before reporting success.
+- **Then** the attempt does not complete that target; durable failure handling controls retry/fault classification.
+
+### TRANSPORT-007-AC-02 — Publication success followed by lost settlement can repeat
+
+- **Given** publication succeeded without durably established local completion.
+- **When** the unresolved retained target is recovered and dispatched.
+- **Then** publication can repeat with stable IDs, without exactly-once or rollback claims.
+
+### TRANSPORT-007-AC-03 — Stale ownership cannot complete another attempt
+
+- **Given** an old owner lost authority and a new owner acquired work.
+- **When** the old external attempt finishes and tries to complete.
+- **Then** the stale transition is rejected without completing the new owner's state, even if publication occurred.
+
+### TRANSPORT-007-AC-04 — Sibling completion is independent
+
+- **Given** a retained completed target and unresolved sibling.
+- **When** the unresolved sibling retries or faults.
+- **Then** the completed sibling is neither reset nor reinvoked because the batch is only partially successful.
+
+## Open decisions
+
+None.

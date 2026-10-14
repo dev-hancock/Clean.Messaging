@@ -2,40 +2,53 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** Version increments on applied state; an attempt requires active state and its expected version. EF optimistic concurrency fences commit, not all handler invocation. No saga-specific reload/retry loop or serialized external-effect guarantee is supplied.
+Workflow authors need optimistic concurrency so competing continuations cannot both overwrite the same observed state or reopen a terminal winner.
 
-**Evidence:** SagaAttempt.cs; SagaCommit.cs; SagaRuntime.cs; SagaEntry.ApplyState; SagaConfiguration.cs; SagaSaveInterceptor.cs.
+The standards explicitly require version fencing, transaction consistency and owner-managed retries for saga state. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+## Guarantees
 
-## SAGA-012-AC-01 — One applied transition advances version
+- A committed transition MUST advance its observed version once; stale competing transitions MUST not overwrite a committed winner.
+- Rejected durable ownership MUST leave participating candidate state/effects uncommitted; retry MUST remain the delivery owner’s responsibility.
 
-**Given** active version V and a valid handler result.
-**When** owner commits.
-**Then** version becomes V+1 with UpdatedAt and result state/outcome; newly started version zero is advanced by its first applied handler transition.
+## Contract boundaries
 
-## SAGA-012-AC-02 — Concurrent continuations fence committed state
+Version is a state-concurrency counter, not a lease or schema version. Competing handlers may execute before save; external side effects are outside optimistic rollback.
 
-**Given** two contexts load active version V and produce different outcomes/effects.
-**When** they compete to save/commit.
-**Then** one conflicting commit is rejected by optimistic concurrency instead of overwriting the winning state/effects; handlers may both have run.
+## Acceptance criteria
 
-## SAGA-012-AC-03 — Terminal race cannot reopen state
+### SAGA-012-AC-01 — One applied transition advances version
 
-**Given** one attempt completes/fails while a stale continuation still carries expected active version.
-**When** stale attempt applies or saves.
-**Then** it cannot commit a reopened active workflow over the winning terminal transition; conflict/owner policy determines recovery.
+**Given** one active transition is based on version V.
+**When** the owner commits it.
+**Then** the durable version is V+1 with that transition’s state/outcome and UpdatedAt; a new instance starts at version zero and its first applied handler transition advances it.
 
-## SAGA-012-AC-04 — Retries belong to processing owner
+### SAGA-012-AC-02 — Concurrent continuations fence committed state
 
-**Given** a saga version conflict is surfaced during owner dispatch.
-**When** owner applies its retry policy later.
-**Then** no saga-only immediate reload/reinvoke is assumed; a later eligible attempt observes then-current durable state.
+**Given** two contexts prepare continuations from the same version.
+**When** one transition wins the save race.
+**Then** optimistic concurrency rejects the stale competing commit rather than overwriting the winner; handlers may both have run, and the losing participating writes require owner rollback/recovery.
 
-## SAGA-012-AC-05 — Rejected ownership undoes local workflow commit
+### SAGA-012-AC-03 — Terminal race cannot reopen state
 
-**Given** handler ran but owning inbox/outbox/schedule completion is rejected.
+**Given** a competing winner makes the workflow terminal.
+**When** a stale active candidate attempts to commit.
+**Then** the candidate cannot reopen the terminal winner.
+
+### SAGA-012-AC-04 — Retries belong to processing owner
+
+**Given** a candidate fails concurrency persistence.
+**When** recovery later retries the durable delivery.
+**Then** the later eligible owner attempt observes then-current durable state; fresh processing belongs to the owning delivery policy, not an independent saga reload-and-repeat loop inside the failed transition.
+
+### SAGA-012-AC-05 — Rejected ownership undoes local workflow commit
+
+**Given** the durable owner cannot authorize completion of a candidate transition.
 **When** the owner rolls back.
-**Then** participating saga/effect changes are not committed, although a nontransactional handler effect may already exist.
+**Then** candidate workflow state, outgoing/timer effects and completion do not commit as a successful owned transition; nontransactional handler effects may already exist.
+
+## Open decisions
+
+None.

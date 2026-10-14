@@ -1,27 +1,43 @@
 # OUTBOX-004 — Tracked duplicate suppression versus persisted uniqueness
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: IOutboxStore.Stage, IOutboxWriter.Stage, OutboxWriter, OutboxStore and mappings. [GAP-DUR-007](../GAPS.md#gap-dur-007) covers the scope of idempotency.
+Applications need retained event/target identity to prevent duplicate obligations while understanding that a staged duplicate guard is not an unconditional idempotent database enqueue or a content-conflict resolver.
 
-Precondition: valid batch and owning context. Postcondition: missing tracked logical event/target pairs become Added. Invariant: same EventId/TargetId tracked nondeleted rows suppress new rows without comparing payload or envelope. No database lookup occurs; fresh-context persisted duplicates can fail the owning save. Entry primary key (MessageId,TargetId), unique key (EventId,TargetId); retention deletes that evidence. Deleted tracked rows do not suppress replacement.
+## Guarantees
 
-## OUTBOX-004-AC-01 — Suppress only nondeleted tracked target pairs
+- Retained persisted work MUST enforce event/target uniqueness without replacing the original durable envelope as an incidental duplicate effect.
+- Staging MUST NOT be represented as unconditional database idempotency: a duplicate retained but untracked pair can fail the owning save, and that failure MUST remain visible.
+- A deleted tracked pair MUST NOT suppress a legitimate replacement solely as active staged work. Deleted retained uniqueness evidence MUST NOT be claimed to protect an identity indefinitely.
 
-- **Given** same logical event/target is already tracked nondeleted with possibly different payload; another target is absent.
-- **When** Stage runs in that context.
-- **Then** existing tracked pair is left unchanged and only the missing target is staged; no payload-equivalence guarantee is given.
+The independent basis is the [coding standards](../../CODING_STANDARDS.md), especially the cited identity, lifetime, failure and local-transaction requirements. Coding standards sections 9 and 14 establish per-target persisted uniqueness and retention-limited duplicate memory; public writer/owning-save boundaries deliberately do not promise lookup-backed idempotent enqueue.
 
-## OUTBOX-004-AC-02 — Expose duplicate persisted save failure
+## Contract boundaries
 
-- **Given** the pair is stored but not tracked in a new context.
-- **When** Enqueue/Stage adds the duplicate and owning SaveChanges runs.
-- **Then** staging can return normally but unique event/target persistence can fail; successful enqueue is not unconditional durable idempotency.
+The owning save, retained records and tracked staging state have distinct boundaries. Equivalent repeated work and conflicting identity/content reuse need an explicit policy. Removal of the only unique pair record can permit a later same-identity insertion, not prove its recipient effect is new or harmless.
 
-## OUTBOX-004-AC-03 — Allow deleted tracked replacements and cleaned identities
+## Acceptance criteria
 
-- **Given** an existing pair is tracked Deleted or its old terminal row was physically cleaned.
-- **When** a replacement is staged and saved with valid transaction semantics.
-- **Then** deleted tracked state does not suppress staging; absent retained logical evidence no longer prevents a new delivery.
+### OUTBOX-004-AC-02 — Expose duplicate persisted save failure
+
+- **Given** the same event/target is already persisted but not tracked as active staged work in a fresh owning context.
+- **When** another enqueue is staged and saved.
+- **Then** staging does not guarantee silent database idempotency, and a persisted uniqueness failure at save remains visible rather than authorizing duplicate work.
+
+### OUTBOX-004-AC-03 — Allow deleted tracked replacements and cleaned identities
+
+- **Given** a tracked pair is marked deleted, or its prior persisted row has been cleaned away.
+- **When** the same event/target is staged again.
+- **Then** the deleted tracked pair does not suppress replacement, and removed uniqueness evidence alone no longer blocks reinsertion or protects against repeated external effects.
+
+## Open decisions
+
+The following original acceptance identifiers remain reserved; current behavior and unapproved recommendations do not establish normative authority.
+
+### OUTBOX-004-AC-01 — Suppress only nondeleted tracked target pairs
+
+Reserved pending [GAP-DUR-007](../GAPS.md#gap-dur-007). The original composite retains conflicting nondeleted tracked content while adding missing targets, without equivalence comparison. Stable per-target uniqueness remains required; identity conflict handling needs approval rather than narrowing this ID to duplicate suppression alone.
+
+The complete original identifier remains reserved, not reassigned to its supported subset. Restore it only on approval of its original obligation, or approve an explicit split/replacement under new identifiers.

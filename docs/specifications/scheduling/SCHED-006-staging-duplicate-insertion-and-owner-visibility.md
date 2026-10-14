@@ -2,48 +2,59 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** Schedule stages work, not an immediate durable insert/publication. The EF mapping keys schedules by ScheduleId and marks Version for concurrency. Owner SaveChanges and transaction commit define durability.
+Producers need the caller transaction to own schedule visibility; stable identity must not be mistaken for a promised duplicate-insert result.
 
-**Evidence:** Runtime/ScheduleWriter.cs; ScheduleStore.Add; SchedulingConfiguration.cs; SchedulingTracker.cs; save/transaction interceptors; shared owner dispatchers.
+The public staging surface and the standards on transaction ownership and uncertain outcomes establish persistence visibility independently of insert implementation. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Intent gaps:** [GAP-WF-002](../GAPS.md#gap-wf-002), [GAP-WF-006](../GAPS.md#gap-wf-006).
+## Guarantees
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+- Staging MUST not independently save, publish or commit a schedule.
+- Schedule visibility MUST follow the owning successful save/commit; a known rollback MUST leave its schedule uncommitted.
 
-## SCHED-006-AC-01 — Staged schedule requires save
+## Contract boundaries
 
-**Given** a valid unsaved schedule.
-**When** a separate persisted read or due worker queries.
-**Then** the staged schedule is not visible as durable work until the owner saves and commits.
+Duplicate retry admission is unresolved under GAP-WF-002. A failed save/commit notification or a wake hint cannot prove persisted absence or success; the owner reconciles uncertainty.
 
-## SCHED-006-AC-02 — Explicit transaction delays durable visibility
+## Acceptance criteria
 
-**Given** the owner saved a new schedule inside a user transaction.
-**When** the transaction is still open and later rolls back.
-**Then** other committed readers do not observe a successful new schedule and rollback leaves no durable new operation.
+### SCHED-006-AC-01 — Staged schedule requires save
 
-## SCHED-006-AC-03 — Standalone save and explicit commit publish durable work
+**Given** a valid schedule is staged but its owner has not saved.
+**When** persisted due-work discovery runs.
+**Then** that unsaved addition is not durable executable work and staging has not published it.
 
-**Given** a valid schedule in an implicit save or explicit transaction.
-**When** the save succeeds or the explicit transaction commits.
-**Then** the operation becomes available for due processing after its committed due instant.
+### SCHED-006-AC-02 — Explicit transaction delays durable visibility
 
-## SCHED-006-AC-04 — Repeated insert is not an upsert
+**Given** a schedule is saved inside an uncommitted explicit owner transaction.
+**When** the transaction is known to roll back.
+**Then** other committed readers do not observe a successfully committed new schedule, and known rollback leaves no durable new operation; saving alone did not establish its final visibility.
 
-**Given** a retained schedule with ID X and a retry using ID X with equal or changed payload/due/group.
-**When** the retry is staged and saved.
-**Then** the existing row is not replaced or rescheduled; duplicate tracked/database identity can reject the attempt rather than return idempotent success.
+### SCHED-006-AC-03 — Standalone save and explicit commit publish durable work
 
-## SCHED-006-AC-05 — Duplicate insert race preserves one identity
+**Given** a valid already-due schedule is staged.
+**When** a standalone save or explicit owner commit succeeds.
+**Then** the schedule becomes durable work available to eligibility checks, without a promise of immediate execution.
 
-**Given** two contexts stage the same ScheduleId.
-**When** they compete to commit.
-**Then** at most one row with that identity is committed; the losing insertion is not guaranteed a domain-specific duplicate result.
+### SCHED-006-AC-06 — Save failure cannot establish successful staging
 
-## SCHED-006-AC-06 — Save failure cannot establish successful staging
+**Given** schedule persistence reports failure or uncertainty.
+**When** the caller receives the result or discovery receives a wake.
+**Then** neither report is proof of successful staging or rollback; persisted truth is reconciled before claiming a definitive outcome.
 
-**Given** serialization succeeded but database save/commit fails or is cancelled.
-**When** the owner handles the failure.
-**Then** a wake hint is not evidence of a durable schedule; only independently established committed state is processed.
+## Open decisions
+
+Separate boundary questions remain unapproved in the [decision register](../GAPS.md): `GAP-WF-006`. These do not suspend the independently justified guarantees above.
+
+### SCHED-006-AC-04 — Repeated insert is not an upsert
+
+**Reserved — no normative acceptance scenario.** What result is promised for equal retries, differing payloads and concurrent insertion of one ScheduleId?
+
+Decision: [GAP-WF-002](../GAPS.md#gap-wf-002) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### SCHED-006-AC-05 — Duplicate insert race preserves one identity
+
+**Reserved — no normative acceptance scenario.** What result is promised for equal retries, differing payloads and concurrent insertion of one ScheduleId?
+
+Decision: [GAP-WF-002](../GAPS.md#gap-wf-002) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.

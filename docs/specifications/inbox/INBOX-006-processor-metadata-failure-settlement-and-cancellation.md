@@ -1,39 +1,57 @@
 # INBOX-006 — Processor metadata, failure settlement and cancellation
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: `InboxProcessor.Process`, shared `ClaimRenewal`, `RetryPolicy`, `MessageFailureFactory`, `MessageContext`; [processing](../../reference/processing.md) describes outcomes.
+Operators need each processing attempt to retain its incoming identity and classify retryable failure, permanent failure, host shutdown and lost ownership differently so recovery does not fabricate completion or damage another owner's work.
 
-Contracts: InboxProcessor.Process and IInboxDispatcher.Dispatch bool; handling context contains delivery ID, correlation, causation and target consumer ID and is restored afterward. Failures: permanent MessageException faults immediately; transient/unknown exceptions retry within policy; max attempts is evaluated after a failed claim and is not a hard ceiling on reclaimed crash attempts. Claim-loss and shutdown cancellation are distinct from ordinary failure. Settlement has a timeout linked to claim loss, not the host token.
+## Guarantees
 
-## INBOX-006-AC-01 — Expose and restore delivery metadata
+- During processing, the persisted delivery, correlation, causation and target identities MUST be exposed as current context, and the previous context MUST be restored afterward.
+- Permanent message failure MUST dead-letter immediately. Ordinary transient or unknown failure MUST retry below the configured failure threshold and dead-letter when that threshold is exhausted, retaining diagnosis.
+- Host-requested cancellation MUST propagate as shutdown, not become an ordinary failed-message retry or dead letter.
+- Ownership loss or failed renewal MUST cancel handling cooperatively and MUST NOT settle as though ownership remained valid.
+- Failure settlement MUST have a separate bounded lifetime linked to claim loss, not be automatically abandoned solely because host shutdown began after the message failure.
 
-- **Given** an owned entry and preexisting ambient context.
-- **When** the processor dispatches and finishes or throws.
-- **Then** the handler sees persisted delivery metadata and target ID; the previous context is restored.
+The independent basis is the [coding standards](../../CODING_STANDARDS.md), especially the cited identity, lifetime, failure and local-transaction requirements. Coding standards sections 7 and 9 for cancellation distinctions, bounded failure handling, ambient identity restoration and conditional settlement; public retry configuration establishes ordinary failure thresholds.
 
-## INBOX-006-AC-02 — Classify retry and permanent failure
+## Contract boundaries
 
-- **Given** a target throws transient/unknown failure below the retry threshold or a permanent failure / failure at the threshold.
-- **When** the processor settles while it still owns the claim.
-- **Then** the former is due later with failure diagnostics; the latter is dead-lettered; successful settlement clears claim ownership.
+Configured failure policy does not define whether acquisition, queued abandonment or transaction re-execution spends an attempt; see [GAP-CLAIM-001](../GAPS.md#gap-claim-001). Settlement is not handler duration or remote-publication timeout. Cancellation cannot retract effects, and an unsuccessful settlement leaves recovery dependent on retained unresolved work.
 
-## INBOX-006-AC-03 — Keep shutdown separate from message failure
+## Acceptance criteria
 
-- **Given** the host token is cancelled during handling.
-- **When** the handler observes cancellation and the processor exits.
-- **Then** shutdown cancellation propagates rather than generating an ordinary retry/dead-letter; unsettled work can recover after expiry.
+### INBOX-006-AC-01 — Expose and restore delivery metadata
 
-## INBOX-006-AC-04 — Stop on claim loss or renewal error
+- **Given** an owned entry has persisted metadata and a prior ambient context exists.
+- **When** the attempt executes and then exits.
+- **Then** handlers see the persisted delivery/correlation/causation and target values, and the prior context is restored after exit.
 
-- **Given** renewal returns false or fails while handling.
-- **When** claim-loss cancellation reaches the handler or dispatch returns false.
-- **Then** no ordinary failure settlement is authorized by the lost owner; recovery can reclaim unresolved work.
+### INBOX-006-AC-02 — Classify retry and permanent failure
 
-## INBOX-006-AC-05 — Bound failed settlement independently
+- **Given** a processing failure is permanent, or is transient/unknown below or at the configured failure threshold.
+- **When** a still-authorized attempt settles the failure.
+- **Then** permanent and exhausted failures dead-letter; a below-threshold retry retains diagnosis and a later due time rather than successful completion, and successful retry/dead-letter settlement clears claim ownership.
 
-- **Given** ordinary handling failed, the host later stops, and the owner still has a lease.
-- **When** retry/dead-letter settlement runs.
-- **Then** settlement may finish using its separate timeout; timeout/ownership loss can leave unresolved leased work, not manufactured completion.
+### INBOX-006-AC-03 — Keep shutdown separate from message failure
+
+- **Given** the host stopping token causes handling cancellation.
+- **When** the attempt exits.
+- **Then** shutdown cancellation propagates without recording an ordinary retry or dead-letter solely for that cancellation; retained unresolved work can recover after lease expiry.
+
+### INBOX-006-AC-04 — Stop on claim loss or renewal error
+
+- **Given** renewal is rejected or fails, or settlement authority has been lost.
+- **When** processing responds to the ownership loss.
+- **Then** handling is cancellation-requested and stale settlement cannot overwrite state or be classified as an ordinary owned failure; retained unresolved work can be reclaimed after expiry.
+
+### INBOX-006-AC-05 — Bound failed settlement independently
+
+- **Given** ordinary handling failed and shutdown begins while valid ownership remains.
+- **When** failure settlement runs.
+- **Then** settlement has its own configured timeout and claim-loss cancellation rather than immediate host-token cancellation; timeout or failed settlement is not reported as success.
+
+## Open decisions
+
+None.

@@ -1,21 +1,34 @@
 # DOMAIN-002 — Acknowledgement removes pending facts by identity
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: AggregateRoot explicit IDomainEventSource.Acknowledge and RaisedEvent. Interface supplies an operation, not XML requirements for custom implementations.
+Applications need to remove only the facts whose capture has been acknowledged, without losing unrelated pending facts. Identity-based acknowledgement keeps capture bookkeeping separate from business state and downstream delivery.
 
-Contracts: Acknowledge(Guid) and Events; postcondition for AggregateRoot: all matching IDs removed, other facts remain, absent/previously acknowledged IDs no-op. Acknowledgement timing supplied by EF integration means capture committed, not consumers/transport complete. Custom sources can implement different mechanics and must be source-reviewed separately.
+## Guarantees
 
-## DOMAIN-002-AC-01 — Remove matching identity without changing others
+- AggregateRoot acknowledgement MUST remove pending facts matching the acknowledged event ID and preserve all other pending IDs and payloads.
+- Acknowledging an absent, empty or already acknowledged ID MUST leave the pending collection unchanged. Acknowledgement MUST NOT create a new fact.
 
-- **Given** several pending aggregate events exist.
-- **When** one existing ID is acknowledged.
-- **Then** that ID is absent and other payload/IDs remain pending.
+## Contract boundaries
 
-## DOMAIN-002-AC-02 — Make absent acknowledgement a no-op
+The guarantees apply to AggregateRoot, not arbitrary implementations of IDomainEventSource. An EF capture acknowledgement means local capture commit, not consumer completion or transport receipt. The timing of that acknowledgement is specified in DOMAIN-005 and DOMAIN-006; custom-source semantics remain a separate decision.
 
-- **Given** an unknown, empty or already acknowledged Guid.
-- **When** AggregateRoot is acknowledged.
-- **Then** remaining pending events are unchanged and no new fact is created.
+## Acceptance criteria
+
+### DOMAIN-002-AC-01 — Remove matching identity without changing others
+
+- **Given** several aggregate events are pending.
+- **When** one existing event ID is acknowledged.
+- **Then** matching facts are absent and every other pending ID and payload remains unchanged.
+
+### DOMAIN-002-AC-02 — Make absent acknowledgement a no-op
+
+- **Given** the acknowledged ID is unknown, empty or already removed.
+- **When** AggregateRoot processes the acknowledgement.
+- **Then** its remaining pending facts are unchanged and no new fact is created.
+
+## Open decisions
+
+None.

@@ -1,33 +1,50 @@
 # OUTBOX-012 — Delivery registration and local atomic dispatch
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: Outbox core AddOutboxTransport<TTransport>, OutboxDispatcher and EF LocalOutboxDelivery; local transaction outcome is constrained by OUTBOX-005 and repository atomicity requirements.
+Hosts need unambiguous selection of a target's registered delivery integration. Local delivery must join its participating effects with target completion, while custom external delivery must retain the persisted envelope boundary.
 
-Contracts: AddOutboxTransport<TTransport> registers scoped concrete transport and wrapper delivery; no broker host is automatically installed by that port. Dispatcher transport lookup ordinal; local name "local". Local dispatcher fresh scope per EF strategy attempt, retained completion precheck, configured-context handler, fenced completion, SaveChanges and commit. False completion rolls back. Catch attempts rollback with None and preserves original failure including uncertain commit; handlers/external side effects can repeat during strategy retry.
+## Guarantees
 
-## OUTBOX-012-AC-01 — Reject ambiguous or missing transport selection
+- Duplicate transport names MUST fail as ambiguous configuration. A missing or case-different name MUST fail target dispatch rather than choose another integration.
+- Local delivery MUST commit participating consumer state, newly staged outgoing work and owned target completion together, or commit none of them on a known failed/stale attempt.
+- Retained completed local targets MUST report completion without repeating their committed local effects after recovery.
+- Registered custom external transports MUST receive their persisted target envelope through the publication boundary; their registration MUST not imply automatic broker-host composition.
 
-- **Given** deliveries have duplicate Transport names or a row stores an unregistered/case-different name.
-- **When** dispatcher construction or Dispatch runs.
-- **Then** duplicate construction or missing exact ordinal lookup throws rather than selecting an arbitrary route.
+The independent basis is the [coding standards](../../CODING_STANDARDS.md), especially the cited identity, lifetime, failure and local-transaction requirements. Public delivery registration/name compatibility and coding standards sections 6, 7, 8, 9 and 14 establish ordinal persisted identities, visible configuration failures, atomic local effects and completion-evidence recovery.
 
-## OUTBOX-012-AC-02 — Commit or roll back local target effects
+## Contract boundaries
 
-- **Given** a local target changes configured-context state and stages further work.
-- **When** dispatch commits, handler fails or fenced completion returns false.
-- **Then** success commits state/completion/new outbox together; failure or false rolls back that local transaction.
+Transport names use ordinal comparison; persisted names must stay resolvable. Local atomicity requires the configured scoped context and transaction, not another context or external effects. Completion deletion ends this repeat-protection horizon. External publication can repeat and is separately governed by [OUTBOX-011](OUTBOX-011-transport-dispatch-and-external-repeat-window.md).
 
-## OUTBOX-012-AC-03 — Avoid repeat of retained completed local target
+## Acceptance criteria
 
-- **Given** local transaction committed but success observation was lost.
-- **When** dispatch runs again with retained ProcessedAt.
-- **Then** it reports completed without reinvoking local effects; cleaned records or external effects are outside this retained-completion protection.
+### OUTBOX-012-AC-01 — Reject ambiguous or missing transport selection
 
-## OUTBOX-012-AC-04 — Use registered external wrapper
+- **Given** delivery registrations duplicate a transport name, or a stored name is missing/case-different from registrations.
+- **When** configuration builds or that target is dispatched.
+- **Then** ambiguous names fail configuration and absent/case-different lookup fails visibly without selecting a different transport.
 
-- **Given** AddOutboxTransport<TTransport> is composed with a custom scoped transport and a stored matching target.
-- **When** dispatch resolves the delivery.
-- **Then** the registered transport receives its persisted envelope and successful publication is followed by separate completion.
+### OUTBOX-012-AC-02 — Commit or roll back local target effects
+
+- **Given** a valid local target changes participating state and stages further outgoing work, then either commits or fails/loses settlement authority with a known outcome.
+- **When** local delivery finishes.
+- **Then** successful participating state, newly staged outgoing work and target completion commit together; a failed/stale attempt commits none of them, without undoing arbitrary external effects.
+
+### OUTBOX-012-AC-03 — Avoid repeat of retained completed local target
+
+- **Given** a local target's complete result committed and completion evidence remains after a lost response.
+- **When** the same target is recovered.
+- **Then** it reports completed without repeating its committed local effects.
+
+### OUTBOX-012-AC-04 — Use registered external wrapper
+
+- **Given** a host registers a custom external transport and a durable target names it.
+- **When** that target is delivered.
+- **Then** the selected registered wrapper passes its persisted envelope to publication, and successful publication requires separate fenced local completion; publication/completion are not one transaction and registration alone does not compose a broker host.
+
+## Open decisions
+
+None.

@@ -1,38 +1,60 @@
 # CORE-004 — Durable JSON representation
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
-**Evidence:** MessageSerializer resolves concrete runtime type and uses Web JSON defaults or DI JsonSerializerOptions.
+## Intent
 
-Pre: nonnull registered concrete message. Post: MessageData.Type is its contract and Value is JSON. A configured durable serializer does not configure transport serialization.
+Durable storage needs a consistent named JSON representation that restores supported messages and reports unusable data as failure, not a successful empty message.
 
-## CORE-004-AC-01 — Concrete runtime serialization
-**Given** an object held in a base-typed variable whose concrete type is registered.
-**When** it is serialized.
-**Then** the retained contract and JSON correspond to the concrete registered type.
+## Guarantees
 
-## CORE-004-AC-02 — Default web JSON
-**Given** a registered message with a PascalCase property.
-**When** it is serialized using default options.
-**Then** its ordinary property name uses web camel-case and compatible deserialization restores its value.
+- Serialization MUST use the registered concrete runtime type and retain its contract name and represented JSON values.
+- The default durable JSON format MUST use web property naming; explicitly supplied JsonSerializerOptions MUST govern supported durable serialization/deserialization instead of being replaced by defaults.
+- Malformed/unsupported JSON or JSON null for a known contract MUST report permanent serialization.deserialize.failed without returning a message.
+- JsonException/NotSupportedException during serialization MUST report permanent serialization.serialize.failed and preserve the original cause; null Serialize input MUST raise ArgumentNullException.
 
-## CORE-004-AC-03 — Configured JSON options
-**Given** DI supplies custom JsonSerializerOptions, including a converter or naming policy.
-**When** a supported message is serialized and deserialized.
-**Then** that durable serializer applies the supplied options rather than independently replacing them.
+## Contract boundaries
 
-## CORE-004-AC-04 — Invalid JSON and null result
-**Given** a known contract paired with malformed JSON, unsupported JSON conversion, or JSON `null`.
-**When** deserialization is requested.
-**Then** a Fault MessageException reports `serialization.deserialize.failed` and no message is returned.
+The host registers concrete message types and configures compatible serializer options before use. Durable JSON and transport payload serialization are separate. Converter/handler failures outside the stated JSON exceptions are not universally wrapped. This is not schema negotiation, live reload or a guarantee for default MessageData with null fields.
 
-## CORE-004-AC-05 — Serialization failure
-**Given** a registered object whose JSON serialization throws JsonException or NotSupportedException.
-**When** serialization is requested.
-**Then** a Fault MessageException reports `serialization.serialize.failed` and preserves the original exception as diagnostic cause.
+## Acceptance criteria
 
-## CORE-004-AC-06 — Null input
-**Given** a null object.
-**When** Serialize is called.
-**Then** ArgumentNullException is raised before a successful MessageData is produced.
+### CORE-004-AC-01 — Concrete runtime serialization
+
+- **Given** a base-typed variable contains a concrete message whose concrete type is registered.
+- **When** the durable serializer writes that value.
+- **Then** the retained contract identifies the concrete type and its JSON preserves the represented concrete message values.
+
+### CORE-004-AC-02 — Default web JSON
+
+- **Given** a registered message with a PascalCase property.
+- **When** it is serialized using default options.
+- **Then** its ordinary property name uses web camel-case and compatible deserialization restores its value.
+
+### CORE-004-AC-03 — Configured JSON options
+
+- **Given** the host supplies compatible JsonSerializerOptions through DI, with a converter or naming policy, before serializer use.
+- **When** a supported message is durably serialized and deserialized.
+- **Then** its representation and restored values use those configured options rather than independently substituted defaults.
+
+### CORE-004-AC-04 — Invalid JSON and null result
+
+- **Given** a known contract paired with malformed JSON, unsupported JSON conversion, or JSON `null`.
+- **When** deserialization is requested.
+- **Then** a Fault MessageException reports `serialization.deserialize.failed` and no message is returned.
+
+### CORE-004-AC-05 — Serialization failure
+
+- **Given** a registered object whose JSON serialization throws JsonException or NotSupportedException.
+- **When** serialization is requested.
+- **Then** a Fault MessageException reports `serialization.serialize.failed` and preserves the original exception as diagnostic cause.
+
+### CORE-004-AC-06 — Null input
+
+- **Given** a null object.
+- **When** Serialize is called.
+- **Then** ArgumentNullException is raised before a successful MessageData is produced.
+
+## Open decisions
+
+[GAP-CORE-008](../GAPS.md#gap-core-008) covers malformed public records; [GAP-CORE-009](../GAPS.md#gap-core-009) covers serializer/options reconfiguration.

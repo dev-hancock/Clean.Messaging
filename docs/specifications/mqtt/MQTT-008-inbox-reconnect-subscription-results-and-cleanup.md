@@ -1,18 +1,43 @@
 # MQTT-008 — Inbox reconnect, subscription results and cleanup
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) | [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
-**Evidence:** entire [MqttInboxWorker](../../../src/Clean.Messaging.Inbox.Ingress.Mqtt/Runtime/MqttInboxWorker.cs), including connect/subscription checks, one-slot reconnect semaphore, connection lock, disconnected callback and final cleanup.
+## Intent
 
-## MQTT-008-AC-01 — Each successful connection subscribes all routes again
-**Given** configured routes and a successful MQTT connect response, **When** startup or reconnect completes its subscriptions, **Then** all filters are subscribed again regardless of session-present status. Each result must contain exactly one granted QoS 1 or 2 result; granted QoS need not equal requested QoS.
+Inbox hosts need bounded, noncompeting connection recovery and truthful readiness, with explicit resource ownership through shutdown.
 
-## MQTT-008-AC-02 — Refused connection or rejected subscription uses fixed reconnect loop
-**Given** non-success connection result, subscription rejection/QoS 0, or an unexpected subscription result count, **When** connection setup runs, **Then** setup fails, logs a warning and enters disconnect/fixed configured delay/reconnect recovery instead of a successful ready state or durable entry retry loop. A zero/multiple result count is not accepted as valid subscription success.
+Authority: Coding standards on bounded owned resources/work, failure distinctions and truthful readiness. They do not select exact resubscription/result acceptance, fixed recovery sequence or final-disconnect/draining policy. See [coding standards](../../CODING_STANDARDS.md).
 
-## MQTT-008-AC-03 — Concurrent failure signals do not queue unbounded reconnects
-**Given** a connected inbox client and several concurrent admission failures or unexpected disconnect signals, **When** reconnect is signalled, **Then** requests are coalesced rather than creating unbounded independent pending reconnects; connect/disconnect transitions are serialized. Worker-initiated disconnect does not recursively resignal through the disconnected callback.
+## Guarantees
 
-## MQTT-008-AC-04 — Shutdown removes callbacks and attempts final disconnect
-**Given** the worker owns a connected client, **When** host shutdown ends its loop, **Then** receive/disconnected callbacks are removed, final disconnect is attempted with CancellationToken.None and disconnect exceptions are logged, and the client is disposed. This does not assert a bounded network disconnect duration or durable replay after broker session expiry/reset.
+- Concurrent failures MUST be coalesced without unbounded independent reconnects. Connection transitions MUST serialize and worker disconnect MUST NOT recursively create recovery signals.
+- Connection/subscription failure MUST NOT become ready subscription state. Broker reconnect MUST remain separate from durable retry.
+- Client and synchronization resources MUST have explicit lifetime ownership; shutdown MUST NOT manufacture receipt/consumer success.
+
+## Contract boundaries
+
+Delivery depends on subscription acceptance and actual broker/session state. No exact result-count/QoS-grant contract, unconditional resubscription or shutdown duration is selected here. Resource ownership is not race certification.
+
+## Acceptance criteria
+
+### MQTT-008-AC-03 — Concurrent failure signals do not queue unbounded reconnects
+
+- **Given** a connected client and concurrent admission failures/unexpected disconnects.
+- **When** recovery is signalled.
+- **Then** requests are coalesced instead of unbounded queued reconnects, transitions serialize and worker disconnect does not recursively resignal.
+
+## Open decisions
+
+The original IDs and exact heading anchors below remain reserved, not normative scenarios. No replacement IDs are assigned before a decision.
+
+### MQTT-008-AC-01 — Each successful connection subscribes all routes again
+
+What subscription/session-present/granted-QoS contract establishes readiness? Reserve unconditional resubscription and exact result acceptance together under the original composite ID. Decision [GAP-INTENT-TX-004](../GAPS.md#gap-intent-tx-004) remains unapproved.
+
+### MQTT-008-AC-02 — Refused connection or rejected subscription uses fixed reconnect loop
+
+Which setup failures require fixed-delay disconnect/reconnect and what results establish readiness? Decide together with the subscription contract. Decision [GAP-INTENT-TX-004](../GAPS.md#gap-intent-tx-004) remains unapproved.
+
+### MQTT-008-AC-04 — Shutdown removes callbacks and attempts final disconnect
+
+What bound and callback-draining contract applies to final disconnect/disposal? The original fixes an uncancelled disconnect and cleanup sequence without resolving resource obligations. See [GAP-TX-009](../GAPS.md#gap-tx-009); the recommendation remains unapproved.

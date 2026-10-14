@@ -1,27 +1,43 @@
 # OUTBOX-009 — Savepoints, ambient transactions and observer restrictions
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: tracker BeginSave and transaction interceptor CreatingSavepoint/RollingBackToSavepoint synchronous/asynchronous paths. [Persistence](../../reference/persistence.md) describes restrictions.
+Host authors need explicit limits on transaction observation so savepoints or ambient/unobserved transaction ends cannot silently invalidate the capture acknowledgement boundary.
 
-Contracts: sync/async interceptors share lifecycle semantics. Ambient transactions are unsupported for capture; explicit transaction end must be observed. User savepoint creation/rollback outside active save throws NotSupportedException; EF save-time savepoints are allowed. Raw/unobserved commit or disposing without interception is not a supported acknowledgement protocol. No snapshot of callback/key state per user savepoint.
+## Guarantees
 
-## OUTBOX-009-AC-01 — Reject user savepoints outside active save
+- Caller-managed savepoints outside an active observed save MUST be rejected when using this capture integration rather than imply supported capture rollback semantics.
+- Provider save-time savepoints within an active observed EF save MUST remain allowed as part of supported save integration.
+- An unobserved end of a transaction with pending capture MUST NOT be accepted as proof of commit or acknowledgement; subsequent inconsistent lifecycle participation MUST fail.
 
-- **Given** outbox tracking is attached and no save is active.
-- **When** user savepoint creation or rollback-to-savepoint is intercepted.
-- **Then** NotSupportedException reports unsupported tracking rather than a silently partial state rewind.
+The independent basis is the [coding standards](../../CODING_STANDARDS.md), especially the cited identity, lifetime, failure and local-transaction requirements. Public save/transaction integration compatibility and coding standards sections 7, 8 and 14 establish explicit unsupported boundaries and commit-before-acknowledgement; no arbitrary transaction protocol is promised.
 
-## OUTBOX-009-AC-02 — Allow EF save-time savepoints
+## Contract boundaries
 
-- **Given** an intercepted SaveChanges is active in an explicit relational transaction.
-- **When** EF creates or rolls back its save-time savepoint.
-- **Then** the active-save path is permitted and save success/failure still controls capture bookkeeping.
+The supported protocol observes save and transaction completion through configured integration. TransactionScope and caller-managed savepoint recovery are not substitutes for it. These restrictions do not claim rollback of arbitrary tracked domain state and do not choose a future savepoint protocol.
 
-## OUTBOX-009-AC-03 — Expose unobserved transaction end restriction
+## Acceptance criteria
 
-- **Given** an integration bypasses observed transaction end with pending work.
-- **When** it tries a subsequent save on the context.
-- **Then** unsupported lifecycle can be rejected; caller must reconcile/discard rather than infer event acknowledgement from raw commit.
+### OUTBOX-009-AC-01 — Reject user savepoints outside active save
+
+- **Given** pending capture integration is used and no active observed save permits a caller savepoint.
+- **When** the caller creates or rolls back to a savepoint.
+- **Then** NotSupportedException reports the unsupported savepoint boundary instead of silently permitting a partial capture-state rewind.
+
+### OUTBOX-009-AC-02 — Allow EF save-time savepoints
+
+- **Given** an observed EF save is active and its provider uses internal save-time savepoints.
+- **When** the supported save executes.
+- **Then** those internal savepoints are allowed rather than mistaken for unsupported caller-managed recovery, and save success/failure still determines capture bookkeeping.
+
+### OUTBOX-009-AC-03 — Expose unobserved transaction end restriction
+
+- **Given** an owning transaction ends without the integration observing completion and pending work remains.
+- **When** capture participation later attempts to continue under an inconsistent transaction lifecycle.
+- **Then** the unsupported state fails and does not falsely acknowledge the unobserved transaction as committed.
+
+## Open decisions
+
+None.

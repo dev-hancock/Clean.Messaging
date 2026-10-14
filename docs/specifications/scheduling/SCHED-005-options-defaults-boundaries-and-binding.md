@@ -2,36 +2,47 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** SchedulingOptions.Section and Lease.Duration; Processing.Concurrency; Recovery.Interval/BatchSize; Retry.MaxAttempts/Delay/MaxDelay; Cleanup.Retention/Interval/BatchSize/MaxBatchesPerRun. Options callbacks configure these; the section constant is not automatic binding.
+Operators need predictable initial settings and valid resource bounds while retaining control of host configuration.
 
-**Evidence:** Configuration/SchedulingOptions.cs; SchedulingOptionsValidator.cs; DependencyInjection.cs; SchedulingWorker.cs; ScheduleCleanupWorker.cs.
+Public SchedulingOptions and its section/default values provide deliberate configuration compatibility; bounded-resource and explicit host-composition standards justify validation. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Intent gaps:** [GAP-WF-013](../GAPS.md#gap-wf-013).
+## Guarantees
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+- Default options MUST expose the documented initial lease, concurrency, recovery, retry and cleanup settings.
+- Configured positive-only bounds MUST reject zero/negative values; retry delay MUST be nonnegative with a cap at least the initial delay.
 
-## SCHED-005-AC-01 — Default policy is observable without binding
+## Contract boundaries
 
-**Given** fresh options and no configuration callback.
-**When** a composed host reads configured scheduling options.
-**Then** lease is 1 minute, concurrency 4, recovery 30 seconds/batch 32, retry 5 attempts/2 seconds/cap 1 minute, cleanup 30 days/1 hour/batch 500/cap 20 batches.
+Section names do not bind configuration. These are initial settings, not a promise of hot reload or a hard handler-invocation budget. Null subobjects and extreme values remain undecided.
 
-## SCHED-005-AC-02 — Positive-only bounds reject zero and negatives
+## Acceptance criteria
 
-**Given** each of lease duration, concurrency, recovery interval/batch, retry max attempts and all cleanup settings is separately zero or negative.
-**When** startup option validation runs.
-**Then** each invalid setting fails validation while a positive boundary setting is accepted.
+### SCHED-005-AC-01 — Default policy is observable without binding
 
-## SCHED-005-AC-03 — Retry delay zero and equal cap are valid
+**Given** fresh options without host configuration binding.
+**When** their values are read.
+**Then** lease is 1 minute; concurrency 4; recovery interval 30 seconds and batch 32; retry maximum 5, delay 2 seconds and cap 1 minute; cleanup retention 30 days, interval 1 hour, batch 500 and run cap 20.
 
-**Given** delay is zero with zero cap, or a nonnegative delay equals its cap.
-**When** options are validated.
-**Then** both combinations are accepted; negative delay or a cap below delay is rejected.
+### SCHED-005-AC-02 — Positive-only bounds reject zero and negatives
 
-## SCHED-005-AC-04 — Configuration section name does not bind itself
+**Given** zero or negative lease duration, concurrency, recovery interval/batch, retry maximum, or cleanup retention/interval/batch/run cap.
+**When** configuration is validated.
+**Then** each invalid positive-only setting is rejected rather than admitting unbounded or nonprogressing work; valid positive boundary settings are accepted.
 
-**Given** configuration contains Messaging:Scheduling values but registration receives no binding callback.
-**When** the host composes scheduling.
-**Then** defaults remain unless the host explicitly configures/binds them; arbitrary supplied IConfiguration is not consumed by these overloads.
+### SCHED-005-AC-03 — Retry delay zero and equal cap are valid
+
+**Given** retry delay/cap values at zero, equal, negative or cap below initial delay.
+**When** configuration is validated.
+**Then** zero initial delay and an equal cap are valid; a negative delay or smaller cap is rejected.
+
+### SCHED-005-AC-04 — Configuration section name does not bind itself
+
+**Given** configuration exists under Messaging:Scheduling but no binding is supplied.
+**When** the host registers scheduling.
+**Then** the section constant alone does not bind those values; explicit host configuration determines overrides.
+
+## Open decisions
+
+Separate boundary questions remain unapproved in the [decision register](../GAPS.md): `GAP-WF-013`. These do not suspend the independently justified guarantees above.

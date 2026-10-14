@@ -2,58 +2,69 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** Transient/ordinary failure retries until claimed Attempts reaches MaxAttempts; permanent MessageException faults immediately. Scheduling retry is deterministic capped exponential, distinct from shared jittered entry retry.
+Operators need recoverable retry/permanent-failure outcomes and distinct cooperative cancellation without treating acquisition counts as proven handler calls.
 
-**Evidence:** SchedulingWorker.cs; ScheduleFailure.cs; ScheduleStore.Retry/Fail; ScheduleEntry.Complete; MessageException.
+FailureAction compatibility, durable retry and cancellation standards justify disposition distinctions; public retry options establish configured bounds, not an internal accounting unit or exact delay algorithm. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+## Guarantees
 
-## SCHED-012-AC-01 — Permanent failure settles immediately
+- A current owned permanent failure MUST become terminal when settlement succeeds; retryable unfinished work MUST remain recoverable within the selected budget.
+- Observed processing-token cancellation MUST not be classified as an ordinary message failure; an unsuccessful settlement MUST not masquerade as completed work.
 
-**Given** a current claimed active schedule fails with FailureAction.Fault MessageException.
-**When** failure settlement succeeds.
-**Then** FailedAt is recorded immediately with that code/message and claim/lease/retry cleared, even below MaxAttempts.
+## Contract boundaries
 
-## SCHED-012-AC-02 — Ordinary and transient failure retry within budget
+Retry-budget accounting, exact backoff and diagnostic history/representation remain undecided. Fencing applies to settlement; expiry asymmetry remains GAP-WF-004. Lease recovery is not a guarantee of exact invocation count.
 
-**Given** a current attempt below MaxAttempts fails ordinarily or with retry-classified MessageException.
-**When** settlement succeeds.
-**Then** the row remains nonterminal with NextAttemptAt, no claim/lease, and failure diagnostics; it cannot retry before that instant.
+## Acceptance criteria
 
-## SCHED-012-AC-03 — Exhaustion occurs on failed attempt at boundary
+### SCHED-012-AC-01 — Permanent failure settles immediately
 
-**Given** Attempts equals MaxAttempts or is greater and delivery fails transiently.
-**When** settlement succeeds.
-**Then** the schedule is failed rather than rescheduled; prior lease-loss claims count toward this decision.
+**Given** a currently owned active schedule fails with a Fault-classified MessageException below the retry budget.
+**When** authorized failure settlement succeeds.
+**Then** FailedAt records terminal failure with the failure code/message and no remaining claim, lease or retry eligibility; transient retry is not substituted.
 
-## SCHED-012-AC-04 — Capped exponential delays have no jitter
+### SCHED-012-AC-02 — Ordinary and transient failure retry within budget
 
-**Given** fixed clock and attempts 1, 2 and a sufficiently high attempt with valid delays.
-**When** retry time is calculated.
-**Then** delays equal min(MaxDelay, Delay * 2^max(0, attempt-1)); zero delay is immediate and no random variation is introduced.
+**Given** a currently owned delivery has budget remaining and fails ordinarily or with Retry-classified MessageException.
+**When** authorized retry settlement succeeds.
+**Then** it remains nonterminal with recorded diagnostics and a next-attempt instant, without current claim/lease; it is not eligible before that retry instant.
 
-## SCHED-012-AC-05 — Diagnostic bounds and fallback code
+### SCHED-012-AC-07 — Shutdown cancellation is not normal message failure
 
-**Given** MessageException or ordinary exception with long code/message/type.
-**When** retry/failure diagnostics persist.
-**Then** MessageException.Code or scheduling.unhandled is stored, code/message/exception type are limited to 200/500/500 characters, and ordinary exception text is not a guaranteed sanitized public message.
+**Given** the processing token is cancelled during scheduled work.
+**When** execution observes that cancellation.
+**Then** the cancellation remains distinct from normal retry/permanent failure settlement; unfinished durable ownership can later expire and recover.
 
-## SCHED-012-AC-06 — Success retains earlier retry history
+### SCHED-012-AC-08 — Failed settlement is recoverable unfinished work
 
-**Given** a schedule with failed-attempt diagnostics later delivers successfully.
-**When** completion commits.
-**Then** DispatchedAt is present and ownership/retry cleared, but Attempts and previous diagnostic values are retained.
+**Given** recording retry or failure itself fails.
+**When** the worker resumes recovery.
+**Then** that failed settlement or its log is not successful completion; still-active persisted work becomes recoverable when its ownership expires and eligibility permits.
 
-## SCHED-012-AC-07 — Shutdown cancellation is not normal message failure
+## Open decisions
 
-**Given** processing token is cancelled during dispatch.
-**When** cancellation propagates.
-**Then** the cancellation is not converted into a normal scheduling retry/failure; unfinished persisted work relies on lease/recovery unless already committed.
+### SCHED-012-AC-03 — Exhaustion occurs on failed attempt at boundary
 
-## SCHED-012-AC-08 — Failed settlement is recoverable unfinished work
+**Reserved — no normative acceptance scenario.** Which unit consumes scheduling retry budget, especially lease-loss, cancelled and never-admitted claims?
 
-**Given** dispatch failed but database retry/failure settlement fails or is cancelled.
-**When** the worker later recovers with storage restored.
-**Then** no terminal/retry state is inferred from a log; still-active work becomes claimable through expiry/recovery.
+Decision: [GAP-CLAIM-001](../GAPS.md#gap-claim-001) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### SCHED-012-AC-04 — Capped exponential delays have no jitter
+
+**Reserved — no normative acceptance scenario.** Is exact deterministic capped exponential retry, including no jitter, the intended scheduling policy?
+
+Decision: [GAP-INTENT-WF-002](../GAPS.md#gap-intent-wf-002) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### SCHED-012-AC-05 — Diagnostic bounds and fallback code
+
+**Reserved — no normative acceptance scenario.** Which diagnostic fallback codes, truncation/sanitization rules and post-success/cancellation history are guaranteed?
+
+Decision: [GAP-INTENT-WF-003](../GAPS.md#gap-intent-wf-003) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### SCHED-012-AC-06 — Success retains earlier retry history
+
+**Reserved — no normative acceptance scenario.** Which diagnostic fallback codes, truncation/sanitization rules and post-success/cancellation history are guaranteed?
+
+Decision: [GAP-INTENT-WF-003](../GAPS.md#gap-intent-wf-003) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.

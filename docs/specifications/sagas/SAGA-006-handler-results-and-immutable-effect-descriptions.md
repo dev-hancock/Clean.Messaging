@@ -2,54 +2,65 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** SagaResult.Continue/Complete/Fail, implicit ValueTask conversion; Send(Guid,payload)/Send(SagaMessage), Schedule(Guid,due,payload)/Schedule(SagaSchedule), Cancel(Guid). SagaMessage exposes ID/payload/optional correlation/causation; SagaSchedule exposes ID/due/payload; SagaCancel exposes TimerId. The public effect hierarchy is not an external apply-plugin port.
+Handler authors need immutable declarative results that distinguish business outcome from delivery failure and describe supported local effects without executing them during construction.
 
-**Evidence:** ISagaHandler.cs; SagaResult.cs; SagaEffect.cs; SagaAttempt.cs; SagaRuntime.cs.
+The public restricted SagaResult factories and effect descriptors, immutable-value standards and explicit outcome/cancellation standards establish this contract. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Intent gaps:** [GAP-WF-008](../GAPS.md#gap-wf-008).
+## Guarantees
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+- Continue, Complete and valid Fail results MUST preserve their distinct business outcomes.
+- Appending supported effects MUST return a new ordered description without mutating the original; invalid IDs/null effect payloads MUST be rejected at supported admission.
 
-## SAGA-006-AC-01 — Continue complete and fail transition outcomes
+## Contract boundaries
 
-**Given** active state and a handler result Continue, Complete or valid Fail.
-**When** the owner commits the transition.
-**Then** Continue remains active, Complete sets completion and clears diagnostics, Fail sets failure/code/message; terminal outcome does not wait for external delivery.
+The returned result must be retained. Fail diagnostic admission is GAP-WF-008; exact diagnostic clearing/history is separately undecided under GAP-INTENT-WF-003. Arbitrary external effect plugins are not supported. Constructing a result is not saving state or publishing.
 
-## SAGA-006-AC-02 — Effect append preserves original result
+## Acceptance criteria
 
-**Given** a reusable result and added send/schedule/cancel descriptions.
-**When** the original and augmented results are used separately.
-**Then** the original produces only its original intentions; the augmented one adds effects in append order without mutating the original description.
+### SAGA-006-AC-02 — Effect append preserves original result
 
-## SAGA-006-AC-03 — Effect overloads describe equivalent operations
+**Given** a result already has an outcome and effects.
+**When** another effect is appended.
+**Then** a new result retains the same outcome and earlier ordered effects; the original result remains unchanged.
 
-**Given** equivalent values supplied through primitive and object Send/Schedule overloads.
-**When** the returned result is processed.
-**Then** both forms capture the same logical ID/payload/due/explicit metadata rather than differing durable obligations.
+### SAGA-006-AC-03 — Effect overloads describe equivalent operations
 
-## SAGA-006-AC-04 — Empty IDs and null effects reject
+**Given** equivalent valid arguments describe a send or timer through primitive and descriptor overloads.
+**When** those results are consumed.
+**Then** both describe the same logical effect identity, payload and supported metadata/due values.
 
-**Given** Guid.Empty Send/Schedule/Cancel, null payload or null message/schedule object.
-**When** the corresponding public result API is used.
-**Then** invalid argument is rejected before a valid effect description is appended; past due alone is permitted.
+### SAGA-006-AC-04 — Empty IDs and null effects reject
 
-## SAGA-006-AC-05 — Null state factory and null handler result fail
+**Given** supported Send/Schedule/Cancel operations receive empty identities, or Send/Schedule receives null descriptors/payloads.
+**When** effects are described.
+**Then** the invalid input is rejected; a past due instant alone does not invalidate a valid timer description.
 
-**Given** a start factory returns null or a handler returns null.
-**When** handling is attempted.
-**Then** the invalid result/state is rejected and no successful owner transition/effects commit.
+### SAGA-006-AC-05 — Null state factory and null handler result fail
 
-## SAGA-006-AC-06 — Throwing handler does not apply a returned result
+**Given** the configured start factory returns null or the handler returns null instead of a result.
+**When** processing evaluates that attempt.
+**Then** it fails rather than committing an invented state or default outcome.
 
-**Given** handler mutates its deserialized state and throws or observes cancellation.
-**When** the enclosing owner rolls back.
-**Then** no mutated saga state or result effects become durable; ordinary exception and cancellation follow their distinct owner classifications.
+### SAGA-006-AC-06 — Throwing handler does not apply a returned result
 
-## SAGA-006-AC-07 — Public cancellation descriptor is not direct effect execution
+**Given** a handler throws or observes owner cancellation.
+**When** the owner rolls back that failed attempt.
+**Then** no returned-result outcome or candidate state/effects from that attempt commits; cancellation retains its separate owner meaning.
 
-**Given** new SagaCancel(Guid.Empty) or a custom effect intent is constructed externally.
-**When** the supported result APIs are considered.
-**Then** constructor alone does not reject empty SagaCancel, but supported Result.Cancel rejects it; no public append/apply port makes arbitrary SagaEffect subclass execution a supported plugin contract.
+## Open decisions
+
+Separate boundary questions remain unapproved in the [decision register](../GAPS.md): `GAP-WF-008`. These do not suspend the independently justified guarantees above.
+
+### SAGA-006-AC-01 — Continue complete and fail transition outcomes
+
+**Reserved — no normative acceptance scenario.** The original composite also selects clearing failure diagnostics on completion. Is the exact retained diagnostic history part of the result contract, independently of the public Continue/Complete/Fail outcome distinction?
+
+Decision: [GAP-INTENT-WF-003](../GAPS.md#gap-intent-wf-003) ([unapproved decision register](../GAPS.md)). Preserve the original identity and heading; a narrower outcome-only criterion requires explicit splitting and a new identity rather than silently reusing this ID.
+
+### SAGA-006-AC-07 — Public cancellation descriptor is not direct effect execution
+
+**Reserved — no normative acceptance scenario.** Is acceptance/formatting of directly constructed empty identity values and empty SagaCancel an intentional compatibility contract?
+
+Decision: [GAP-INTENT-WF-006](../GAPS.md#gap-intent-wf-006) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.

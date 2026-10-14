@@ -1,18 +1,49 @@
 # MQTT-003 — Incoming filters choose exactly one route
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) | [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
-**Evidence:** [RouteFilter](../../../src/Clean.Messaging.Inbox.Ingress.Mqtt/RouteFilter.cs), [router](../../../src/Clean.Messaging.Inbox.Ingress.Mqtt/Routing/MqttInboxRouter.cs), [route contract](../../../src/Clean.Messaging.Inbox.Ingress.Mqtt/Routing/IMqttInboxRoute.cs), [poison exception](../../../src/Clean.Messaging.Inbox.Ingress.Mqtt/Routing/MqttPoisonMessageException.cs).
+## Intent
 
-## MQTT-003-AC-01 — Wildcards and topic levels select one payload map
-**Given** non-overlapping filters `devices/+/state` and `events/#`, **When** `devices/a/state` or `events/a/b` arrives, **Then** exactly its matching route supplies the payload/message map, not broadcast fan-out across routes. Durable consumer fan-out occurs after admission, not MQTT route selection.
+Ingress hosts need a topic to choose one typed payload route; consumer fan-out belongs after durable admission rather than ambiguous transport routing.
 
-## MQTT-003-AC-02 — Invalid wildcard placement and overlap reject configuration
-**Given** `a/#/b`, `a+b`, `a#`, duplicate filters, or overlapping `a/+` and `a/b`, **When** the router is constructed, **Then** invalid syntax or overlap fails configuration instead of selecting an arbitrary winner. A blank filter is already rejected by `On`/Subscribe.
+Authority: MQTT topic-filter protocol semantics and deliberate single-route typed ingress, plus coding standards on validation and preserving poison classification. See [coding standards](../../CODING_STANDARDS.md).
 
-## MQTT-003-AC-03 — System-topic distinction and level boundaries remain explicit
-**Given** `#` and `$SYS/#`, or distinct filters containing empty levels such as `a//b` and `a/b`, **When** overlap validation runs, **Then** the system/non-system filters are not deemed overlapping solely through `#`, and distinct empty/nonempty level paths remain distinct. Runtime route matching follows MQTTnet's topic-filter comparer, not a custom global ordering rule.
+## Guarantees
 
-## MQTT-003-AC-04 — Unroutable incoming work is poison
-**Given** a received topic with no matching configured route, **When** routing resolves it, **Then** it raises MQTT poison classification and no durable admission occurs. If multiple runtime matches occur despite configuration validation, the same poison path rejects ambiguity rather than admitting twice.
+- MQTT whole-level +/# semantics, terminal #, empty levels and system-topic wildcard distinction MUST be preserved.
+- Invalid/overlapping routes MUST fail configuration without an arbitrary precedence winner.
+- Routable receipts MUST select one typed map, not broadcast. No route or runtime ambiguity MUST reject admission as poison.
+
+## Contract boundaries
+
+Filter selection is separate from durable consumer fan-out. A non-system wildcard does not claim $SYS topics. Routing poison does not itself acknowledge a receipt.
+
+## Acceptance criteria
+
+### MQTT-003-AC-01 — Wildcards and topic levels select one payload map
+
+- **Given** nonoverlapping devices/+/state and events/# filters.
+- **When** devices/a/state or events/a/b arrives.
+- **Then** only the matching route supplies the map, without broadcast; durable fan-out remains after admission.
+
+### MQTT-003-AC-02 — Invalid wildcard placement and overlap reject configuration
+
+- **Given** a/#/b, a+b, a#, duplicate/overlapping filters or a blank filter.
+- **When** configuration reaches On/Subscribe validation or router construction.
+- **Then** invalid syntax, overlap and blank filters fail instead of choosing a winner.
+
+### MQTT-003-AC-03 — System-topic distinction and level boundaries remain explicit
+
+- **Given** filters # and $SYS/#, or a//b and a/b.
+- **When** overlap validation and matching occur.
+- **Then** system topics are not captured solely by non-system # and empty levels remain distinct; runtime matching follows MQTTnet topic-filter semantics, not global ordering.
+
+### MQTT-003-AC-04 — Unroutable incoming work is poison
+
+- **Given** a receipt with no route or multiple matches despite configuration validation.
+- **When** routing resolves it.
+- **Then** poison prevents durable admission or admission twice.
+
+## Open decisions
+
+None.

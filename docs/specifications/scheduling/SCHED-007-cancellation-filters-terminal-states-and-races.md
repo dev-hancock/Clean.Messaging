@@ -2,52 +2,63 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** IMessageScheduler.Cancel/CancelGroup use message target; IScheduleWriter.Cancel has optional group, CancelGroup has exceptId. Cancellation stages changes and does not revoke external effects.
+Producers and saga adapters need scoped cancellation that stops remaining local work without recalling effects already delivered.
 
-**Evidence:** OutboxMessageScheduler.cs; Runtime/ScheduleWriter.cs; ScheduleStore.Cancel/CancelGroup; ScheduleEntry.Cancel; SchedulingConfiguration.cs.
+IScheduleWriter cancellation filters, IMessageScheduler message-only scope and the standards on terminal lifecycle and transaction/external boundaries establish the contract. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+## Guarantees
 
-## SCHED-007-AC-01 — Single cancellation respects target and optional group
+- Cancellation MUST affect only matching identity, target and any supplied group/exclusion scope.
+- Missing or terminal work MUST remain unchanged; participating cancellation MUST obey owner rollback and cancellation, not imply external recall.
 
-**Given** active schedule X with a particular target/group.
-**When** Cancel uses a different target or a nonmatching supplied group.
-**Then** X remains active; a matching command followed by save/commit records cancellation.
+## Contract boundaries
 
-## SCHED-007-AC-02 — Public group cancellation is message-only
+Cancellation requires the owning save/commit and cannot reopen failed work. A race is resolved by durable ownership/concurrency, not by a guarantee that external delivery has never happened. Exact retained diagnostic history is undecided.
 
-**Given** one group contains message and saga target schedules.
-**When** IMessageScheduler.CancelGroup commits.
-**Then** only matching active message-target schedules cancel; saga/other groups remain unchanged.
+## Acceptance criteria
 
-## SCHED-007-AC-03 — Tracked and persisted group work are included
+### SCHED-007-AC-01 — Single cancellation respects target and optional group
 
-**Given** a group has unsaved new/modified and persisted active schedules plus terminal rows.
-**When** a matching group cancel excluding X commits.
-**Then** all matching nonterminal schedules except X cancel, including newly staged ones; terminal rows do not transition.
+**Given** schedules sharing an ID/group context but subject to target and optional group filters.
+**When** single cancellation commits.
+**Then** only the schedule matching the ID, exact target and any specified group is cancelled; unrelated work is unchanged.
 
-## SCHED-007-AC-04 — Missing and terminal cancellation are no-ops
+### SCHED-007-AC-02 — Public group cancellation is message-only
 
-**Given** an absent schedule or an already dispatched/cancelled/failed row.
-**When** matching single or group cancellation completes.
-**Then** no replacement row, reopened work or altered terminal outcome is created.
+**Given** a group contains message-target and saga-target work.
+**When** IMessageScheduler group cancellation commits.
+**Then** nonterminal message schedules in the group are cancelled; saga-target schedules are not cancelled by that public operation.
 
-## SCHED-007-AC-05 — Cancellation removes retry ownership without erasing diagnostics
+### SCHED-007-AC-03 — Tracked and persisted group work are included
 
-**Given** an active claimed/retrying schedule has diagnostics.
-**When** cancellation commits.
-**Then** CancelledAt is present, claim/lease/retry eligibility is cleared, and existing diagnostics remain visible.
+**Given** matching group work includes saved rows and tracked unsaved additions, with an excluded schedule.
+**When** writer group cancellation commits with the owner.
+**Then** both kinds of matching nonterminal work are cancelled, the excluded identity remains untouched and terminal rows do not transition.
 
-## SCHED-007-AC-06 — Concurrent cancellation does not reverse delivery
+### SCHED-007-AC-04 — Missing and terminal cancellation are no-ops
 
-**Given** processing overlaps cancellation of the same schedule.
-**When** their transactions compete.
-**Then** a stale write may fail optimistic concurrency; the winning terminal result is not undone, and already performed external effects cannot be recalled.
+**Given** a missing, dispatched, cancelled or failed schedule.
+**When** cancellation is applied.
+**Then** the operation does not create, reopen or rewrite a terminal schedule.
 
-## SCHED-007-AC-07 — Cancel obeys owner rollback and cancellation token
+### SCHED-007-AC-06 — Concurrent cancellation does not reverse delivery
 
-**Given** a cancellation is staged or its database query receives a cancelled token.
-**When** the owner rolls back or I/O is cancelled.
-**Then** rolled-back cancellation is not durable; cancellation is propagated rather than reported as successful terminal mutation.
+**Given** cancellation races with scheduled delivery.
+**When** the competing outcomes are observed.
+**Then** cancellation cannot reverse an already committed delivery or revoke an external effect; a stale local write may fail optimistic concurrency, and ownership/concurrency fencing protects the winning terminal result.
+
+### SCHED-007-AC-07 — Cancel obeys owner rollback and cancellation token
+
+**Given** cancellation changes participate in the owner transaction or the operation observes its cancellation token.
+**When** the owner rolls back or cancellation aborts the operation.
+**Then** no rolled-back cancellation is represented as committed and token cancellation is not ordinary successful settlement.
+
+## Open decisions
+
+### SCHED-007-AC-05 — Cancellation removes retry ownership without erasing diagnostics
+
+**Reserved — no normative acceptance scenario.** Which diagnostic fallback codes, truncation/sanitization rules and post-success/cancellation history are guaranteed?
+
+Decision: [GAP-INTENT-WF-003](../GAPS.md#gap-intent-wf-003) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.

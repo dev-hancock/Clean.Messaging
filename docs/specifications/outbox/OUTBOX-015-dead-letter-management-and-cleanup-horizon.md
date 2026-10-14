@@ -1,39 +1,57 @@
 # OUTBOX-015 — Dead-letter management and cleanup horizon
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: IOutboxManager/OutboxManager, OutboxCleanupWorker, shared DeadLetterStore and DurableStore.Cleanup. Outbox has no replay-from-admissions API.
+Operators need to inspect, requeue or discard failed outgoing targets without erasing their history or resetting successful siblings, and clean old terminal evidence with an explicit duplicate-protection horizon.
 
-Contracts: GetDeadLetters(default 100), Requeue, Discard; inherited Cleanup. Positive listing/cleanup limit and nonnull key collections; empty allowed. Per-key independent transactions, no batch atomicity; ambient mutations rejected. Requeue resets Attempts and claim/due/terminal state but retains diagnostics; discard preserves dead-letter diagnosis. Cleanup immediate/periodic one batch, only terminal timestamps strictly older than UTC retention cutoff. Deletes identity/completion history; pending work survives, no admission archive or outgoing replay is provided.
+## Guarantees
 
-## OUTBOX-015-AC-01 — Inspect and manage eligible dead letters
+- Inspection MUST list only nondiscarded retained dead letters with a positive bounded limit. Requeue/discard MUST transition only eligible keys and report actual successful transitions.
+- Requeue MUST preserve identity, payload and diagnosis while clearing terminal/claim/due state and resetting attempts. Discard MUST retain diagnosis and dead-letter history without pretending success.
+- Per-key management MUST remain independently committed, not batch-atomic; ambient mutations and null input MUST fail, while valid empty collections MUST report zero transitions.
+- Cleanup MUST delete at most the positive limit of terminal rows strictly older than the cutoff and preserve pending/equality/newer evidence.
+- Cleanup failure MUST be reported and permit later periodic retry, without claiming deletion succeeded. Removed unique evidence MUST not be advertised as unlimited duplicate protection.
 
-- **Given** eligible, discarded, absent/completed and duplicate keys, or invalid listing/empty mutation inputs.
-- **When** manager operations run.
-- **Then** positive listing returns nondiscarded dead letters; nonpositive fails; only eligible transitions count, empty collections do nothing, duplicates count Requested but not extra transitions.
+The independent basis is the [coding standards](../../CODING_STANDARDS.md), especially the cited identity, lifetime, failure and local-transaction requirements. Public management/cleanup compatibility and coding standards sections 7 and 9 establish truthful per-key transitions, retained diagnosis, bounded retention and no permanent deduplication claim after deletion.
 
-## OUTBOX-015-AC-02 — Preserve diagnosis and partial transitions
+## Contract boundaries
 
-- **Given** several eligible keys and later failure/cancellation or ambient Transaction.Current.
-- **When** Requeue/Discard executes.
-- **Then** successful earlier independent transitions persist; requeue resets Attempts/terminal/claim/due while preserving diagnosis; discard retains dead-letter state; ambient mutation is rejected.
+Requested counts include supplied repeated keys; success counts eligible transitions. Successful requeue hints processing but does not prove delivery. Management cannot reset successful rows and supplies no historical replay API. A cleaned event/target can become insertable again; applications own repeat-sensitive recipient protection.
 
-## OUTBOX-015-AC-03 — Delete only old terminal evidence
+## Acceptance criteria
 
-- **Given** pending and terminal rows lie before/equal/after cutoff.
-- **When** Cleanup runs with positive bounded limit.
-- **Then** only strictly older terminal rows are deleted up to limit; pending/equality rows survive and deleted logical pairs can later be staged again.
+### OUTBOX-015-AC-01 — Inspect and manage eligible dead letters
 
-## OUTBOX-015-AC-04 — Do not hide cleanup failure
+- **Given** retained keys include active dead letters, ineligible and repeated keys, a valid empty collection, or inspection is requested with a nonpositive limit.
+- **When** inspection, requeue or discard is requested.
+- **Then** positive inspection respects its limit and active eligibility while nonpositive inspection fails; only eligible mutations count, Requested includes supplied keys without duplicate extra transitions, successful requeue signals processing and empty collections return zero transitions.
 
-- **Given** a correctly resolved cleanup worker encounters ordinary storage failure or host cancellation.
-- **When** its cleanup cycle runs.
-- **Then** ordinary failure is warning-logged for later retry; host cancellation stops and neither path claims successful deletion.
+### OUTBOX-015-AC-02 — Preserve diagnosis and partial transitions
 
-## OUTBOX-015-AC-05 — Reject null key collections and invalid cleanup limit
+- **Given** eligible work has diagnosis and an earlier per-key mutation commits before a later failure, cancellation or ambient request.
+- **When** management requeues/discards or rejects the unsupported boundary.
+- **Then** requeue resets attempts and terminal/claim/due state while preserving identity/payload/diagnosis; discard retains history, prior committed keys remain changed, and ambient mutation fails.
 
-- **Given** Requeue/Discard receives null or Cleanup receives a nonpositive limit.
-- **When** the operation is requested.
-- **Then** invalid input fails rather than performing an empty successful operation.
+### OUTBOX-015-AC-03 — Delete only old terminal evidence
+
+- **Given** pending and terminal rows older than, at and newer than the cutoff exist.
+- **When** bounded cleanup completes and a cleaned identity is later staged.
+- **Then** only up-to-limit strictly old terminal evidence is deleted, pending/equality/newer rows remain, and deleted unique evidence alone does not prevent same event/target restaging.
+
+### OUTBOX-015-AC-04 — Do not hide cleanup failure
+
+- **Given** periodic cleanup fails under a running host or shutdown cancels it.
+- **When** the cycle ends.
+- **Then** ordinary failure is warned and a later tick can retry, shutdown ends cooperatively and neither failure nor cancellation is claimed successful deletion.
+
+### OUTBOX-015-AC-05 — Reject null key collections and invalid cleanup limit
+
+- **Given** requeue/discard receives null, or cleanup receives a nonpositive limit.
+- **When** management or cleanup is requested.
+- **Then** invalid input fails instead of becoming a valid empty request or unbounded delete.
+
+## Open decisions
+
+None.

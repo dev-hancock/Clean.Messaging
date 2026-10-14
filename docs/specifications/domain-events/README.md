@@ -1,48 +1,24 @@
-# Domain events behavioural specifications
+# Domain events capability catalogue
 
-## Purpose and authority
+[Specification index](../INDEX.md) · [Documentation index](../../README.md)
 
-Required behaviour is grounded only in normative repository instructions or explicit API XML requirements. Observed behaviour is derived from inspected implementation. Source-derived Reference and Explanation pages are descriptive corroboration, not independent normative authority. Proposed behaviour is explicitly **unapproved**. Unknown behaviour uses **numbered undecided questions**, without acceptance-criterion IDs. Every acceptance criterion inherits its specification classification unless explicitly marked otherwise; none below overrides it. Required criteria can identify suspected source mismatches and are not claims of conformance.
+## Purpose
 
-## Capability purpose, contracts and common boundaries
+Application authors use this capability to expose pending facts selected by their domain and capture them as outgoing work in the owning local transaction. The library supplies source mechanics and capture integration, not business invariants, synchronous domain dispatch or event sourcing.
 
-Consumer-owned raising/custom source -> tracked-source capture in owning save -> concrete outbox target staging -> commit observation/verification -> source acknowledgement -> independent durable outbox delivery.
+## Capability lifecycle
 
-- **Preconditions:** consumer host owns registration, valid durable contracts and identities, configured relational schema/transactions where applicable, stable payload/source state and suitable cancellation/lifetime composition. Each focused specification narrows these preconditions.
-- **Postconditions:** only observable admitted, staged, committed, acknowledged or per-target lifecycle outcomes explicitly stated below; success at one boundary does not imply success at another.
-- **Invariants:** preserve logical event identity versus delivery identity, concrete durable contract names, original envelope/context metadata, target-specific completion, ownership fences, retry classifications and owning-context transaction boundaries. Repeated external effects remain possible.
-- **Failures:** validation/serialization/resolution/database/transport failures and cancellation remain distinct; ordinary logging is not durable success. Source exceptions/cancellation racing commit require evidence, not an assumption of rollback.
-- **Concurrency:** contexts and source collections are not automatically thread-safe. Lease ownership is fenced at settlement, not permission to suppress repeated external calls. Recovery requires a running healthy host/store; no strict latency, fairness or global completion order is specified.
-- **Limitations:** Raising is in memory, not event sourcing. The base enforces no application-specific invariant. Ack means capture committed, not consumers finished. No automatic uncaptured-event crash recovery, historic domain replay, custom-source synchronization or global source-ID validation exists.
+Raising creates in-memory pending facts with logical event identities. A correctly composed tracked-source save stages concrete-contract, per-target outbox work. Successful local commit permits acknowledgement of captured identities; later outbox delivery has its own target completion, retry and external repeat boundaries. An acknowledgement is never a receipt from consumers or a broker.
 
-### Common public model and lifecycle contracts
+## Shared contract boundaries
 
-Record positional fields, exposed init/set properties, constants, generic constraints, explicit interface implementations and protected extension operations are included in the source/contract table. Public primary constructors and inherited hosted StartAsync/StopAsync/Dispose behaviour are composition surfaces, not additional delivery guarantees. For entries, all identity/payload/context fields, Attempts, ClaimId, ClaimedUntil, NextAttemptAt, ProcessedAt, DeadLetteredAt, DiscardedAt, FailureCategory, FailureCode, ExceptionType, FailureMessage, LastFailedAt, LastFailedAttempt and derived Key participate in the lifecycle specifications. Port implementations (including internal EF adapters) are separately traced by responsibility.
+AggregateRoot supplies identity-based pending-event mechanics; IDomainEventSource permits application-defined sources. The host maps its entities and separately installs outbox services, models and both interceptors. Context/source state remains application-owned and single-owner during capture. Retained outbox targets survive process loss; uncaptured pending lists do not. Retention is not a domain history or permanent duplicate ledger.
 
-### Related references
+The [coding standards](../../CODING_STANDARDS.md) establish ownership, identity, transaction, failure and resource obligations. Intentional public operation and persisted-contract compatibility further constrain these contracts. Reference pages describe implementation; they do not independently approve unresolved policy. Each numbered page separates required outcomes from reserved original obligations.
 
-[Repository instructions](../../../.github/copilot-instructions.md), [coding standards](../../CODING_STANDARDS.md), [documentation index](../../README.md); references: [architecture](../../reference/architecture.md), [configuration](../../reference/configuration.md), [contracts](../../reference/contracts.md), [inbox](../../reference/inbox.md), [outbox](../../reference/outbox.md), [domain events](../../reference/domain-events.md), [persistence](../../reference/persistence.md), [processing](../../reference/processing.md), [transport](../../reference/transport.md). Explanations: [capability boundaries](../../explanation/capability-boundaries.md), [message identity](../../explanation/message-identity.md), [transaction boundaries](../../explanation/transaction-boundaries.md), [delivery semantics](../../explanation/delivery-semantics.md), [durable workflows](../../explanation/durable-workflows.md). Adjacent ingress/broker/mapper APIs are outside these owned files; their source-derived descriptions do not independently establish required behaviour.
+## Open decisions
 
-## Public contract references
-
-See the [package contract and source map](../../reference/contract-map.md) for public declarations, supporting sources and their specification IDs. The contracts and observable boundaries are defined here and in the numbered specifications.
-
-### Shared dependency contracts
-
-| Source path | Responsibility | Related specifications |
-| --- | --- | --- |
-| [src\Clean.Messaging\Consumers\ConsumerRegistry.cs](../../../src/Clean.Messaging/Consumers/ConsumerRegistry.cs) | Exact-type/name consumer selection, permanent faults | INBOX-001, INBOX-009; OUTBOX-003; DOMAIN-007; DOMAIN-003–DOMAIN-009 via composed outbox |
-| [src\Clean.Messaging\Serialization\MessageSerializer.cs](../../../src/Clean.Messaging/Serialization/MessageSerializer.cs) | Concrete runtime contract serialization and fault classification | INBOX-001; OUTBOX-001; DOMAIN-004, DOMAIN-007; DOMAIN-003–DOMAIN-009 via composed outbox |
-| [src\Clean.Messaging\Persistence\IDurableStore.cs](../../../src/Clean.Messaging/Persistence/IDurableStore.cs) | Inherited Claim/Renew/Complete/Retry/DeadLetter/Cleanup and OwnedEntry | INBOX-004; OUTBOX-013; DOMAIN-003–DOMAIN-009 via composed outbox |
-| [src\Clean.Messaging\Persistence\IDurableEntry.cs](../../../src/Clean.Messaging/Persistence/IDurableEntry.cs) | Common entry identity/state contract | INBOX-004; OUTBOX-013; DOMAIN-003–DOMAIN-009 via composed outbox |
-| [src\Clean.Messaging.EntityFrameworkCore\DurableStore.cs](../../../src/Clean.Messaging.EntityFrameworkCore/DurableStore.cs) | Claim ordering/eligibility, ownership fence, lifecycle updates/cleanup | INBOX-004, INBOX-010; OUTBOX-013, OUTBOX-015; DOMAIN-003–DOMAIN-009 via composed outbox |
-| [src\Clean.Messaging.EntityFrameworkCore\PersistenceServices.cs](../../../src/Clean.Messaging.EntityFrameworkCore/PersistenceServices.cs) | Same scoped persistence context and options composition | INBOX-011; OUTBOX-016; DOMAIN-003–DOMAIN-009 via composed outbox |
-
-Domain capture also depends directly on the outbox EF tracker/writer/interceptors and provider-neutral OutboxEntryFactory; their full source/contract trace is in [outbox specifications](../outbox/README.md#public-contract-references).
-
-## Contract limits
-
-Source-derived ordering, transaction interception and uniqueness outcomes do not establish universal provider guarantees. Observed suspected discrepancies remain unresolved in [GAPS.md](../GAPS.md), not approved fixes.
+Custom source collisions, collection-view/stability and acknowledgement failures remain in [GAP-DUR-010](../GAPS.md#gap-dur-010) and [GAP-DUR-009](../GAPS.md#gap-dur-009); targetless capture remains in [GAP-DUR-011](../GAPS.md#gap-dur-011). Their recommendations are not approved.
 
 ## Specifications
 
@@ -55,4 +31,43 @@ Source-derived ordering, transaction interception and uniqueness outcomes do not
 - [DOMAIN-007 — Invalid custom facts and targetless acknowledgement](DOMAIN-007-invalid-custom-facts-and-targetless-acknowledgement.md)
 - [DOMAIN-008 — Custom source collisions and acknowledgement failures](DOMAIN-008-custom-source-collisions-and-acknowledgement-failures.md)
 - [DOMAIN-009 — Crash, recovery and retention boundaries](DOMAIN-009-crash-recovery-and-retention-boundaries.md)
-- [DOMAIN-010 — Undecided source and acknowledgement contract](DOMAIN-010-undecided-source-and-acknowledgement-contract.md)
+- [DOMAIN-010 — Event-source and acknowledgement contract](DOMAIN-010-undecided-source-and-acknowledgement-contract.md)
+
+## Public contract references
+
+[AggregateRoot](../../../src/Clean.Messaging.DomainEvents/AggregateRoot.cs) and [RaisedEvent/IDomainEventSource](../../../src/Clean.Messaging.DomainEvents/RaisedEvent.cs) define source mechanics. [DomainEventCapture](../../../src/Clean.Messaging.DomainEvents.EntityFrameworkCore/DomainEventCapture.cs) connects those sources to the owning outbox’s save/capture lifecycle. The [package contract map](../../reference/contract-map.md) supplies declaration lookup, not extra behavioral guarantees.
+
+### Shared dependency contracts
+
+Contract serialization, consumer/target resolution and durable store ownership retain their adjacent capability contracts; see the [outbox catalogue](../outbox/README.md).
+
+## Contract limits
+
+Local capture, downstream delivery and retention are distinct boundaries. Open source/callback policies do not authorize stronger delivery claims.
+
+### Related references
+
+- [Repository instructions](../../../.github/copilot-instructions.md)
+- [coding standards](../../CODING_STANDARDS.md)
+- [documentation index](../../README.md)
+- [architecture](../../reference/architecture.md)
+- [configuration](../../reference/configuration.md)
+- [contracts](../../reference/contracts.md)
+- [inbox](../../reference/inbox.md)
+- [outbox](../../reference/outbox.md)
+- [domain events](../../reference/domain-events.md)
+- [persistence](../../reference/persistence.md)
+- [processing](../../reference/processing.md)
+- [transport](../../reference/transport.md)
+- [capability boundaries](../../explanation/capability-boundaries.md)
+- [message identity](../../explanation/message-identity.md)
+- [transaction boundaries](../../explanation/transaction-boundaries.md)
+- [delivery semantics](../../explanation/delivery-semantics.md)
+- [durable workflows](../../explanation/durable-workflows.md)
+- [package contract and source map](../../reference/contract-map.md)
+- [src\Clean.Messaging\Consumers\ConsumerRegistry.cs](../../../src/Clean.Messaging/Consumers/ConsumerRegistry.cs)
+- [src\Clean.Messaging\Serialization\MessageSerializer.cs](../../../src/Clean.Messaging/Serialization/MessageSerializer.cs)
+- [src\Clean.Messaging\Persistence\IDurableStore.cs](../../../src/Clean.Messaging/Persistence/IDurableStore.cs)
+- [src\Clean.Messaging\Persistence\IDurableEntry.cs](../../../src/Clean.Messaging/Persistence/IDurableEntry.cs)
+- [src\Clean.Messaging.EntityFrameworkCore\DurableStore.cs](../../../src/Clean.Messaging.EntityFrameworkCore/DurableStore.cs)
+- [src\Clean.Messaging.EntityFrameworkCore\PersistenceServices.cs](../../../src/Clean.Messaging.EntityFrameworkCore/PersistenceServices.cs)

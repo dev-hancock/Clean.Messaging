@@ -1,27 +1,41 @@
 # DOMAIN-006 — Defer acknowledgement and deduplicate multi-save capture
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: DomainEventCapture registers callback before factory/writer; OutboxTracker Capture/AcknowledgeAfterCommit/SaveSucceeded/TransactionCommitted. [Outbox specification](../outbox/OUTBOX-006-public-save-capture-protocol-and-per-context-deduplication.md#outbox-006--public-save-capture-protocol-and-per-context-deduplication) covers the shared tracker protocol.
+Applications may save more than once in a transaction while facts remain pending. Those saves must accumulate new outgoing responsibilities without recapturing earlier facts or acknowledging events whose transaction could still roll back.
 
-Preconditions: stable pending source and explicit owning transaction observed by interceptors. Postconditions: same event/type captures once across successful saves before commit; acknowledgements run only after successful observed/verified commit. Events raised between saves can join pending transaction work. Acknowledge callback carries source/event identity but callback dictionary keyed solely eventId. No permanent inbox-like event admission ledger exists for these in-memory facts.
+## Guarantees
 
-## DOMAIN-006-AC-01 — Keep facts pending across multiple saves
+- A captured fact MUST remain pending until the owning commit is observed or verified, and repeated successful saves in that transaction MUST suppress its duplicate capture.
+- Distinct facts raised before later saves MUST join the transaction’s outgoing work without replacing or recapturing earlier facts.
+- Commit acknowledgement MUST select captured identities only; a newer uncaptured fact MUST remain pending.
 
-- **Given** a source event was captured in the first save of an explicit transaction.
-- **When** further saves occur before commit then transaction commits.
-- **Then** the event remains pending before commit, duplicate capture is suppressed, then normal acknowledgement removes it after commit.
+## Contract boundaries
 
-## DOMAIN-006-AC-02 — Capture newly raised facts in later save
+These guarantees concern stable, distinct facts in one correctly observed owning transaction, with valid targets and ordinary AggregateRoot acknowledgement. They do not establish a permanent event admission ledger, cross-context capture suppression or a policy for colliding custom-source IDs. Delivery remains target-specific outbox work after commit.
 
-- **Given** an initial event is pending in transaction state and a distinct event is raised before a second save.
-- **When** second save and final commit succeed.
-- **Then** both facts have their respective outgoing target sets committed and acknowledged without recapturing the earlier event.
+## Acceptance criteria
 
-## DOMAIN-006-AC-03 — Acknowledge only selected committed identities
+### DOMAIN-006-AC-01 — Keep facts pending across multiple saves
 
-- **Given** an event is raised after the last capture but before acknowledgement processing without corrupting enumeration.
-- **When** earlier captured work commits.
-- **Then** acknowledgement removes the captured ID only; the newer uncaptured event remains pending.
+- **Given** a fact was captured by the first save in an explicit transaction.
+- **When** further saves succeed and then the transaction commits.
+- **Then** the fact stays pending before commit, is not captured twice and is removed by normal acknowledgement only after commit.
+
+### DOMAIN-006-AC-02 — Capture newly raised facts in later save
+
+- **Given** an earlier fact is pending in transaction capture state and a distinct fact is raised before a later save.
+- **When** the later save and final commit succeed.
+- **Then** both respective target sets commit and both facts are acknowledged without recapturing the earlier fact.
+
+### DOMAIN-006-AC-03 — Acknowledge only selected committed identities
+
+- **Given** a new fact is raised after the last capture without disrupting enumeration.
+- **When** the earlier captured work commits.
+- **Then** only captured IDs are acknowledged and the newer uncaptured fact remains pending.
+
+## Open decisions
+
+None.

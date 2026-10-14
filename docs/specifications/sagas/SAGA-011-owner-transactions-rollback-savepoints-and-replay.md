@@ -2,48 +2,59 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** Saga runtime stages state/effects without independently calling save/starting a business transaction. Inbox/local-outbox dispatchers and schedule executor own supported local transactions. EF saga save hook rejects changed sagas in ambient transactions.
+Host composers need a single local owner transaction across workflow state and effects, including failure/replay behavior and unsupported transaction shapes.
 
-**Evidence:** SagaRuntime.cs; SagaAttempt.cs; SagaSaveInterceptor.cs; InboxDispatcher.cs; LocalOutboxDelivery.cs; ScheduleExecutor.cs; OutboxTransactionInterceptor.cs.
+The coding standards on atomic local workflow effects, repeatable handlers, uncertain commit and explicit supported transaction ownership establish this boundary. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Intent gaps:** [GAP-WF-006](../GAPS.md#gap-wf-006).
+## Guarantees
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+- Saga result application MUST not commit independently of the durable delivery owner.
+- A known owner rollback MUST undo participating state/effects/completion; replay MUST not be represented as a once-only handler-call guarantee.
 
-## SAGA-011-AC-01 — No implicit commit from result application
+## Contract boundaries
 
-**Given** valid handling stages saga/outgoing/timer state.
-**When** the caller has not saved or committed.
-**Then** separate committed readers do not see a completed workflow transition; result construction/handling is not transaction commit.
+Same-context EF Inbox, local Outbox and Scheduling owners supply the boundary. Ambient changed-saga saves and caller-managed Outbox savepoints are unsupported; cross-capability savepoint recovery remains GAP-WF-006.
 
-## SAGA-011-AC-02 — Inbox and local-outbox owners capture all local state
+## Acceptance criteria
 
-**Given** handler changes saga, business entity, outgoing work and timers in configured owner scope.
-**When** entry dispatch commits successfully.
-**Then** participating business/saga/effects and owned entry completion are durable together; another context/network effect has no such guarantee.
+### SAGA-011-AC-01 — No implicit commit from result application
 
-## SAGA-011-AC-03 — Failed effect rolls back earlier applied local changes
+**Given** a valid result is applied without an owning save/commit.
+**When** persistence is inspected.
+**Then** no implicit saga commit is performed; state/effects remain staged intentions.
 
-**Given** result state and earlier send effect were staged but a later timer/effect/save fails.
-**When** owner rolls back.
-**Then** none of the attempt local state or effects is durably committed merely because an earlier effect was staged.
+### SAGA-011-AC-02 — Inbox and local-outbox owners capture all local state
 
-## SAGA-011-AC-04 — Execution strategy may repeat handler
+**Given** Inbox or local-Outbox owner, saga state, outgoing/timer effects and any participating business changes share a scoped context/transaction.
+**When** the owner commits a successful transition.
+**Then** owner completion and all participating local changes become durable together; another context or network effect is outside this guarantee.
 
-**Given** a local transactional invocation ran but its strategy repeats before a known committed completion.
-**When** recovery executes the owner.
-**Then** handler invocation can repeat; only committed owner fencing/state/effects determine successful local completion.
+### SAGA-011-AC-03 — Failed effect rolls back earlier applied local changes
 
-## SAGA-011-AC-05 — Ambient changed-saga save is unsupported
+**Given** a later effect fails after earlier state/effects were staged in the owner transaction.
+**When** the owner is known to roll back.
+**Then** earlier participating changes and completion do not remain committed as a partial transition.
 
-**Given** a changed saga participates in ambient TransactionScope.
-**When** sync or async SaveChanges begins.
-**Then** the saga integration rejects unsupported ambient ownership; unrelated no-saga saves are not rejected by this hook.
+### SAGA-011-AC-04 — Execution strategy may repeat handler
 
-## SAGA-011-AC-06 — Outbox composition rejects caller savepoint operations
+**Given** persistence recovery replays a delivery after failed or uncertain execution.
+**When** the handler runs again.
+**Then** repeat execution is permitted; local rollback guarantees do not promise exactly-once handler calls or revoke external effects.
 
-**Given** saga/schedule/outbox share configured transaction integration.
-**When** caller creates or rolls back to a savepoint outside active save.
-**Then** outbox integration rejects that unsupported operation; EF internal savepoints during saves are distinct and permitted.
+### SAGA-011-AC-05 — Ambient changed-saga save is unsupported
+
+**Given** changed saga state is saved under an ambient transaction.
+**When** the save is attempted.
+**Then** that unsupported transaction shape is rejected instead of accepted as a supported owner commit; this saga hook does not reject an unrelated save with no changed sagas.
+
+### SAGA-011-AC-06 — Outbox composition rejects caller savepoint operations
+
+**Given** composed Outbox capture is outside its internal save operation.
+**When** the caller attempts creation of or rollback to a savepoint.
+**Then** caller-managed savepoint operation is rejected; EF internal savepoints during supported saves remain distinct and permitted. This does not imply support for restoring arbitrary partially captured saga/schedule effects.
+
+## Open decisions
+
+Separate boundary questions remain unapproved in the [decision register](../GAPS.md): `GAP-WF-006`. These do not suspend the independently justified guarantees above.

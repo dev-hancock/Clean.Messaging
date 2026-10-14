@@ -1,21 +1,38 @@
 # INBOX-003 — Empty admission boundary
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: `InboxBatch.IsEmpty`, `InboxStore.CreateAdmission` requires a first entry despite a complete batch envelope; the default consumer registry rejects no-consumer types earlier. See [GAP-DUR-001](../GAPS.md#gap-dur-001).
+Consumers need an explicit answer about accepting history for later processing when no initial target exists. Duplicate recognition must not accidentally decide the validity of a new targetless admission.
 
-Contracts: public IInboxStore.Accept permits representing an empty InboxBatch; EF implementation does not accept a new empty batch. A retained duplicate is checked before creation. This is a source-derived boundary, not an approved desired contract.
+## Guarantees
 
-## INBOX-003-AC-01 — Reject a new empty batch
+- Admission outcomes MUST distinguish newly accepted work from recognition of retained identity; neither implies consumer completion.
+- A retained admission MUST NOT be rewritten solely to resolve a targetless request.
 
-- **Given** an unretained InboxBatch with complete original envelope and Entries empty.
-- **When** the EF store accepts it directly.
-- **Then** InvalidOperationException occurs and no admission is retained.
+The independent basis is the [coding standards](../../CODING_STANDARDS.md), especially the cited identity, lifetime, failure and local-transaction requirements. Typed durable admission and immutable retained identity are established; no independent decision establishes whether an empty admission is a valid consumer capability.
 
-## INBOX-003-AC-02 — Recognize retained empty duplicate
+## Contract boundaries
 
-- **Given** an already retained MessageId or EventId and an otherwise empty batch.
-- **When** the EF store accepts the duplicate directly.
-- **Then** it returns without adding targets; empty-batch validation is not applied to retained identities.
+No normative empty-batch admission policy is selected here. The ability to represent an envelope without entries does not prove that the public admission boundary accepts it. Admission-only support must be decided together with replay and payload retention.
+
+## Acceptance criteria
+
+No resolved acceptance criteria are assigned on this page. The original identifiers remain reserved under Open decisions.
+
+## Open decisions
+
+The following original acceptance identifiers remain reserved; current behavior and unapproved recommendations do not establish normative authority.
+
+### INBOX-003-AC-01 — Reject a new empty batch
+
+Reserved pending [GAP-DUR-001](../GAPS.md#gap-dur-001). Rejection of every new empty batch is not independently approved. Decide whether an envelope can be admitted for later target assignment rather than turning the current first-entry dependency into a permanent capability restriction.
+
+The complete original identifier remains reserved, not reassigned to its supported subset. Restore it only on approval of its original obligation, or approve an explicit split/replacement under new identifiers.
+
+### INBOX-003-AC-02 — Recognize retained empty duplicate
+
+Reserved pending [GAP-DUR-001](../GAPS.md#gap-dur-001). Recognition of a retained duplicate before validating an otherwise empty batch selects a caller-visible validation order. Decide that order with new targetless admission; retained identity does not alone approve the empty-input policy.
+
+The complete original identifier remains reserved, not reassigned to its supported subset. Restore it only on approval of its original obligation, or approve an explicit split/replacement under new identifiers.

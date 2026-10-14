@@ -1,21 +1,38 @@
 # OUTBOX-002 — Ambient outgoing metadata and representation members
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: OutboxEntryFactory.Create, OutboxEnvelope, MessageContext. [Message identity](../../explanation/message-identity.md) explains, not mandates, context inheritance.
+Consumers producing outgoing work need correlation continuity and immediate causal identity, while explicit overrides and later persisted delivery must not be replaced by unrelated ambient state.
 
-Contracts: envelope MessageId/EventId/TargetId/Destination/Message/CorrelationId/CausationId and entry lifecycle members; envelope has no Transport member (delivery selects it before dispatch). Explicit correlation/causation wins; absent correlation inherits context.CorrelationId, absent causation inherits context.MessageId, not context.CausationId. Null cannot explicitly clear an inherited value. These records do not validate their construction independently.
+## Guarantees
 
-## OUTBOX-002-AC-01 — Inherit or override outgoing context
+- Explicit nonnull correlation and causation values MUST take precedence over ambient values.
+- Absent outgoing correlation MUST inherit the current correlation when available. Absent causation MUST inherit the immediate current MessageId, not the parent's CausationId.
+- Without an explicit or ambient value, metadata MUST remain absent.
+- External delivery MUST carry persisted identity, contract, payload and nullable correlation/causation values, not recompute them from a later ambient context.
 
-- **Given** an active delivered MessageId/correlation/causation and an outgoing envelope with supplied or null optional IDs.
-- **When** factory creates targets.
-- **Then** supplied values win; null correlation inherits current correlation and null causation becomes current delivery MessageId, not its parent causation.
+The independent basis is the [coding standards](../../CODING_STANDARDS.md), especially the cited identity, lifetime, failure and local-transaction requirements. Public nullable outgoing metadata compatibility and coding standards sections 9 and 14 for stable persisted relationships; MessageContext defines immediate delivery identity rather than ancestor causation.
 
-## OUTBOX-002-AC-02 — Carry persisted metadata to external port
+## Contract boundaries
 
-- **Given** a stored external target with payload, destination and nullable context IDs.
-- **When** the transport wrapper dispatches.
-- **Then** IOutboxTransport receives an envelope preserving delivery/event/target/destination/payload/context IDs; arbitrary headers or content type are not added by this core envelope.
+Nullable input means inherit when context exists; it is not an explicit clearing instruction. Correlation and causation are relationships, not deduplication keys. Nongeneric OutboxMessage members describe the envelope but do not add a nongeneric Enqueue operation.
+
+## Acceptance criteria
+
+### OUTBOX-002-AC-01 — Inherit or override outgoing context
+
+- **Given** outgoing metadata is either explicitly supplied or null, with an ambient delivery/correlation or no ambient context.
+- **When** the outgoing envelope is staged.
+- **Then** nonnull overrides win, null correlation inherits available current correlation, null causation inherits available immediate MessageId rather than ancestor causation, and unavailable values remain null.
+
+### OUTBOX-002-AC-02 — Carry persisted metadata to external port
+
+- **Given** retained external work has persisted identity/payload and nullable metadata while another ambient context exists.
+- **When** it is delivered through the external transport port.
+- **Then** the published envelope retains its delivery/event/target IDs, destination, contract, payload and nullable correlation/causation rather than adopting the other context; arbitrary headers and content type are not automatically added by the core envelope.
+
+## Open decisions
+
+None.

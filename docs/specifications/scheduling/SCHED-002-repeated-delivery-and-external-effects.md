@@ -2,28 +2,41 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Required behaviour
+## Intent
 
-**Contracts and applicability:** IScheduleDelivery.Target and Dispatch(ScheduledDispatch, CancellationToken). Delivery is at least once, not exactly once. A delivery adapter must tolerate repeats with the same schedule identity.
+Delivery implementers and host composers need recoverable scheduled delivery without mistaking local consumption for an exactly-once external effect.
 
-**Evidence:** IScheduleDelivery XML contract explicitly requires duplicate tolerance; docs/CODING_STANDARDS.md §§8–9 excludes distributed atomicity and requires assuming repeated external delivery.
+IScheduleDelivery explicitly specifies at-least-once delivery; the local atomicity and external-effects standards establish the transaction boundary. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+## Guarantees
 
-## SCHED-002-AC-01 — Same scheduled operation can be delivered again
+- Delivery implementations MUST tolerate repeat delivery of the same scheduled operation.
+- Participating outgoing state and schedule completion MUST commit together or leave no confirmed local successful effect after rollback.
 
-**Given** an effect succeeded but its local completion did not commit.
-**When** recovery dispatches the schedule again.
-**Then** the repeated dispatch carries the same schedule identity and does not claim that the external effect was applied exactly once.
+## Contract boundaries
 
-## SCHED-002-AC-02 — Participating outbox state commits together
+Atomicity requires one scoped context and owning transaction. Direct external I/O, other contexts and broker receipt are excluded; an uncertain commit is not confirmed rollback.
 
-**Given** a schedule and outgoing rows use the configured scoped context with supported integration.
-**When** successful delivery commits its transaction.
-**Then** schedule completion and outgoing staging are both durable; neither is committed alone.
+## Acceptance criteria
 
-## SCHED-002-AC-03 — Owner rollback leaves no local successful effect
+### SCHED-002-AC-01 — Same scheduled operation can be delivered again
 
-**Given** delivery stages outgoing work in the same configured transaction.
-**When** that owner rolls back before successful commit.
-**Then** neither outgoing staging nor schedule completion is durable; any external effect is outside that rollback guarantee.
+**Given** one retained operation whose earlier attempt was rolled back or has an uncertain outcome.
+**When** recovery delivers it again.
+**Then** the operation identity is unchanged and the delivery implementation tolerates the repetition; external effects are not promised to occur once.
+
+### SCHED-002-AC-02 — Participating outbox state commits together
+
+**Given** schedule completion and outgoing rows participating in one context/transaction.
+**When** successful scheduled delivery commits.
+**Then** both completion and the outgoing intentions are durable in that local commit, not independently committed halves.
+
+### SCHED-002-AC-03 — Owner rollback leaves no local successful effect
+
+**Given** local delivery writes participating in an owner transaction that is known to roll back.
+**When** the failed attempt is inspected.
+**Then** neither successful schedule completion nor those outgoing rows is committed by that attempt; external effects are outside this result.
+
+## Open decisions
+
+None.

@@ -1,10 +1,23 @@
 # OPS-005 — Settlement log attribution
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Unknown behaviour
-**Evidence:** Processor retry/dead-letter wording is logged before conditional persistence; outcome-looking log may precede a rejected/failing update.
+## Intent
 
-Unknown: whether settlement-intent and confirmed settlement should have distinct operational messages. Current metric boundary differs from logs; proposal belongs in GAPS, not silent telemetry rewrite.
+Operators must not confuse a diagnostic statement about intended settlement with confirmed durable state. The choice of phase-accurate log wording needs a deliberate contract while database outcomes and metric observations retain their own meaning.
 
-**Open decisions:** [GAP-CORE-007](../GAPS.md#gap-core-007).
+## Guarantees
+
+- Operational log text MUST NOT be treated as durable confirmation of retry or dead-letter settlement. A failed or rejected store transition MUST NOT acquire successful durable status merely because a log was emitted.
+
+## Contract boundaries
+
+This specification does not mandate new log templates, event IDs, message order or post-success logs. The existing metric contract is in OPS-004. Whether settlement intent and confirmed outcome should have distinct operational messages remains an unapproved policy decision.
+
+## Acceptance criteria
+
+No acceptance-criterion IDs are assigned to the unresolved policies on this page.
+
+## Open decisions
+
+- [GAP-CORE-007](../GAPS.md#gap-core-007): the related policy remains undecided; its recommendation is not approved.

@@ -1,18 +1,38 @@
-# CONFIG-005 — One messaging persistence context type
+# CONFIG-005 — Persistence-context composition constraints
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
-**Evidence:** PersistenceServices.EnsurePersistence rejects a different type in the same collection; same type is accepted.
+## Intent
 
-Pre: standard persistence registrations in one collection. Post: same type can be shared by capabilities; a different type conflicts. This check does not verify same instance/transaction for arbitrary contexts.
+Hosts combining durable capabilities need predictable persistence composition. A capability must not silently change the messaging context selection established by another capability in the same service collection.
 
-## CONFIG-005-AC-01 — Consistent context registration
-**Given** a collection already selects context A.
-**When** another capability selects context A.
-**Then** the persistence type check accepts it.
+## Guarantees
 
-## CONFIG-005-AC-02 — Conflicting context registration
-**Given** a collection already selects context A.
-**When** a capability selects different context B.
-**Then** registration fails clearly rather than silently mixing standard messaging contexts.
+- Standard persistence registration MUST accept reuse of the selected messaging context type by another capability.
+- Selecting a different messaging context type in the same service collection MUST fail clearly instead of silently mixing persistence contexts.
+
+## Contract boundaries
+
+The existing single-type constraint applies to standard messaging composition in one service collection. Applications may use other `DbContext` types for unrelated work; this is not a universal single-context architecture rule.
+
+Matching context types does not by itself establish shared instances, transaction participation or atomicity, particularly for custom overrides or writes through unrelated contexts. The [persistence reference](../../reference/persistence.md) describes the current integration requirements.
+
+Supporting independently selected messaging contexts within one service collection would be a separate design and compatibility decision. The existing criteria remain unchanged; this document does not approve that extension.
+
+## Acceptance criteria
+
+### CONFIG-005-AC-01 — Consistent context registration
+
+- **Given** a collection already selects context A.
+- **When** another capability selects context A.
+- **Then** the persistence type check accepts it.
+
+### CONFIG-005-AC-02 — Conflicting context registration
+
+- **Given** a collection already selects context A.
+- **When** a capability selects different context B.
+- **Then** registration fails clearly rather than silently mixing standard messaging contexts.
+
+## Open decisions
+
+None.

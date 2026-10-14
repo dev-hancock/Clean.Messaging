@@ -1,18 +1,43 @@
 # MQTT-002 — Startup options and MQTT connection configuration
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) | [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
-**Evidence:** inbox [options](../../../src/Clean.Messaging.Inbox.Ingress.Mqtt/Configuration/MqttInboxOptions.cs), [validator](../../../src/Clean.Messaging.Inbox.Ingress.Mqtt/Configuration/MqttInboxOptionsValidator.cs), [worker](../../../src/Clean.Messaging.Inbox.Ingress.Mqtt/Runtime/MqttInboxWorker.cs); outbox [options](../../../src/Clean.Messaging.Outbox.Dispatch.Mqtt/MqttOutboxOptions.cs), [validator](../../../src/Clean.Messaging.Outbox.Dispatch.Mqtt/MqttOutboxOptionsValidator.cs), [connection](../../../src/Clean.Messaging.Outbox.Dispatch.Mqtt/Connection/MqttConnection.cs).
+## Intent
 
-## MQTT-002-AC-01 — Invalid operational options prevent valid startup configuration
-**Given** blank Host/ClientId, nonpositive Port, QoS 0/unknown enum, or inbox zero expiry/nonpositive or excessive reconnect delay, **When** registered startup validation evaluates options, **Then** it reports the relevant failures instead of treating those values as a valid operational configuration; multiple invalid values can yield multiple messages.
+Deployment owners need adapter-specific connection defaults and valid configuration without confusing validator acceptance with broker compatibility or secure deployment certification.
 
-## MQTT-002-AC-02 — Validator boundary is distinct from broker validity
-**Given** positive Port 65536 and, for inbox, reconnect delay exactly TimeSpan.FromMilliseconds(uint.MaxValue - 1) and positive expiry, **When** adapter validators run with all other values valid, **Then** they accept those values; one millisecond beyond the delay bound is rejected. Validator acceptance does not claim that the networking stack/broker accepts that port or delay operationally.
+Authority: Deliberate public option defaults and selected MQTT 5 protocol are compatibility surfaces. Coding standards require validation and truthful operational/security boundaries, not accidental numeric limits or ignored password-only configuration. See [coding standards](../../CODING_STANDARDS.md).
 
-## MQTT-002-AC-03 — Defaults remain adapter-specific
-**Given** options with Host/ClientId supplied and other properties untouched, **When** option values and resulting connection/publication configuration are inspected, **Then** the defaults match the inventory above, both connections explicitly use MQTT 5, and outgoing configuration does not acquire inbox session-expiry/reset/delay settings.
+## Guarantees
 
-## MQTT-002-AC-04 — Credentials and TLS are configured without implicit security claims
-**Given** a password with blank Username, **When** connection options are built, **Then** credentials are not configured. **Given** nonblank Username and UseTls=true with Port=1883, **When** connection options are built, **Then** username/password and MQTTnet TLS are enabled without silently changing port or supplying custom certificate rules; successful secure deployment still needs host/broker validation.
+- Connections MUST preserve the explicitly selected MQTT 5 contract and deliberate public defaults unless configured otherwise. Outgoing settings MUST NOT acquire inbox-only session/reset/reconnect options.
+- Invalid required configuration MUST NOT be presented as ready connectivity. Option acceptance MUST NOT certify broker/network acceptance or security.
+- TLS selection MUST NOT silently change port or certify host certificates.
+
+## Contract boundaries
+
+Public defaults: both use port 1883, QoS 1 and TLS off; username/password are optional and Host/ClientId required. Inbox additionally defaults to uint.MaxValue session expiry seconds, five-second reconnect delay and ResetSessionOnStart=false. Outgoing exposes none of these inbox-only settings. QoS 1/2 concerns protocol delivery, not exactly-once application effects.
+
+## Acceptance criteria
+
+### MQTT-002-AC-03 — Defaults remain adapter-specific
+
+- **Given** Host/ClientId are supplied and other public options untouched.
+- **When** connection/publication settings are produced.
+- **Then** the stated adapter-specific defaults apply, both clients select MQTT 5 and outgoing settings acquire no inbox-only expiry/reset/delay.
+
+## Open decisions
+
+The original IDs and exact heading anchors below remain reserved, not normative scenarios. No replacement IDs are assigned before a decision.
+
+### MQTT-002-AC-01 — Invalid operational options prevent valid startup configuration
+
+Which numeric/operational limits and diagnostics are deliberate? The composite includes exact reconnect bounds and multiple validation messages. Decision [GAP-INTENT-TX-002](../GAPS.md#gap-intent-tx-002) remains unapproved.
+
+### MQTT-002-AC-02 — Validator boundary is distinct from broker validity
+
+Should out-of-network-range positive ports be accepted, and what reconnect-delay boundary is supported? Port 65536 acceptance is not an operational guarantee. Decision [GAP-INTENT-TX-002](../GAPS.md#gap-intent-tx-002) remains unapproved.
+
+### MQTT-002-AC-04 — Credentials and TLS are configured without implicit security claims
+
+Should password-only configuration be ignored, rejected or supported? Reserve the complete credentials/TLS criterion, not an ID narrowed to the established no-implicit-port/security guarantee. Decision [GAP-INTENT-TX-002](../GAPS.md#gap-intent-tx-002) remains unapproved.

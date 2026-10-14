@@ -2,60 +2,71 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** Start is defined by correlate+create. StartedByMessageId identifies the original incoming delivery, not EventId. Continuations have no per-saga consumed-message ledger.
+Workflow authors need replay-safe creation and terminal stability without treating a new start as an update or missing continuation as business completion.
 
-**Evidence:** SagaMessageDefinition.cs; SagaRuntime.Create/Find; SagaProcessor.cs; SagaEntry.cs; SagaConsumer.cs.
+Stable type/key/start identity and terminal-invariant standards, deliberate start/continuation builder semantics and the public NotFound/Conflict/Closed recovery surface establish these outcomes. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Intent gaps:** [GAP-WF-012](../GAPS.md#gap-wf-012).
+## Guarantees
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+- A retained same-start delivery MUST be a replay no-op; a different start MUST not overwrite the active or terminal workflow.
+- An active continuation MUST target existing state; a terminal continuation MUST not reopen it, and missing continuation MUST remain distinguishable from completion.
 
-## SAGA-005-AC-01 — Absent start creates initial state
+## Contract boundaries
 
-**Given** no persisted type/key and a nonnull state factory result.
-**When** a start is handled and owner commits.
-**Then** a new SagaId, the incoming MessageId as start identity, initial timestamps and handler-produced state/outcome are retained.
+These guarantees use committed retained identity, not two unsaved starts in one scope. General continuation deduplication is the durable owner’s responsibility; there is no exactly-once handler-call guarantee.
 
-## SAGA-005-AC-02 — Same start identity is replay no-op
+## Acceptance criteria
 
-**Given** active or terminal saga has StartedByMessageId X.
-**When** start message X is handled again.
-**Then** no new saga/state transition/outgoing effects are committed, including when terminal state was purged.
+### SAGA-005-AC-01 — Absent start creates initial state
 
-## SAGA-005-AC-03 — Different active start conflicts
+**Given** a valid start mapping targets an absent type/key.
+**When** the start is handled successfully.
+**Then** initial state comes from its configured factory and a new SagaId records the durable start MessageId and UTC creation/update timestamps; the committed state/outcome reflect the configured handler’s transition.
 
-**Given** active saga at type/key was started by X.
-**When** start Y != X arrives.
-**Then** saga.start.conflict is permanent and exposes type/key; the existing workflow is not overwritten.
+### SAGA-005-AC-02 — Same start identity is replay no-op
 
-## SAGA-005-AC-04 — Different terminal start is closed
+**Given** an active or terminal workflow retains the same StartedByMessageId as an incoming start.
+**When** that start is replayed.
+**Then** it is a no-op without reinvoking the start handler or changing the retained workflow.
 
-**Given** completed/failed saga at type/key was started by X.
-**When** start Y != X arrives.
-**Then** saga.start.closed is permanent; completion/failure is not reopened.
+### SAGA-005-AC-03 — Different active start conflicts
 
-## SAGA-005-AC-05 — Absent continuation is transient missing
+**Given** an active workflow retains another start identity for the same type/key.
+**When** a different start arrives.
+**Then** SagaConflictException reports saga.start.conflict/Fault with the SagaType and Key, and existing state is not replaced.
 
-**Given** no persisted saga at the correlated type/key.
-**When** continuation arrives.
-**Then** saga.not_found is retry-classified with no new saga or effects, allowing a later committed start to make a retry meaningful.
+### SAGA-005-AC-04 — Different terminal start is closed
 
-## SAGA-005-AC-06 — Active continuation can transition
+**Given** a terminal workflow retains another start identity for the same type/key.
+**When** a different start arrives.
+**Then** SagaClosedException reports saga.start.closed/Fault rather than reopening the workflow or acknowledging an equal replay.
 
-**Given** a persisted active saga exists.
-**When** a continuation handles state and owner commits.
-**Then** state/outcome/effects reflect that handler result and the persisted version advances.
+### SAGA-005-AC-05 — Absent continuation is transient missing
 
-## SAGA-005-AC-07 — Terminal continuation is ignored
+**Given** a continuation maps to absent retained state.
+**When** it is handled.
+**Then** SagaNotFoundException reports saga.not_found/Retry without creating state or effects; a later committed start can make a retry meaningful, but the missing continuation is not business completion.
 
-**Given** a terminal saga exists, possibly with purged JSON state.
-**When** continuation arrives.
-**Then** no handler state transition/effects or reopening is committed.
+### SAGA-005-AC-06 — Active continuation can transition
 
-## SAGA-005-AC-08 — General duplicate continuation belongs to owner deduplication
+**Given** a continuation maps to an active workflow.
+**When** its handler succeeds and its owner commits.
+**Then** that existing state/outcome and participating effects reflect the handler result, with the persisted version advancing under the owner boundary.
 
-**Given** an active saga receives the same continuation in separate eligible owner executions.
-**When** both executions are admitted.
-**Then** no per-saga message ledger guarantees suppression; inbox/outbox owner identity and fencing, not the saga key alone, govern duplicate processing.
+### SAGA-005-AC-07 — Terminal continuation is ignored
+
+**Given** a continuation maps to a terminal workflow.
+**When** it arrives.
+**Then** the continuation is ignored without handler execution or reopening terminal state.
+
+### SAGA-005-AC-08 — General duplicate continuation belongs to owner deduplication
+
+**Given** a continuation is redelivered to an active workflow without retained owner deduplication.
+**When** the durable owner routes it again.
+**Then** general duplicate suppression is not supplied by a per-saga continuation ledger; repeated execution remains possible.
+
+## Open decisions
+
+Separate boundary questions remain unapproved in the [decision register](../GAPS.md): `GAP-WF-012`. These do not suspend the independently justified guarantees above.

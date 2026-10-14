@@ -1,27 +1,38 @@
 # DOMAIN-007 — Invalid custom facts and targetless acknowledgement
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: RaisedEvent lacks guards; DomainEventCapture queues acknowledgement then calls factory/writer; factory validates envelope/payload/contracts/targets. [GAP-DUR-011](../GAPS.md#gap-dur-011) covers zero-target acknowledgement.
+Custom sources must not turn invalid facts into successful durable capture. Applications also need a clear distinction between committing target work, committing a targetless save and merely failing to observe a commit.
 
-Contracts: custom IDomainEventSource events and outgoing factories. Preconditions: nonempty custom event ID, nonnull serializable payload and applicable targets for ordinary durable fan-out. Capture failures occur inside save interception, preserving source pending facts. However an empty custom target batch successfully stages no rows while capture/ack state exists; successful observed commit can acknowledge without outgoing rows. Failed commit without keys cannot be verified as success. Default no-consumer provider throws earlier, not an empty target result.
+## Guarantees
 
-## DOMAIN-007-AC-01 — Fail invalid custom fact capture
+- Capture of an invalid ID, invalid payload or unresolved durable contract/required consumer MUST fail rather than report successful capture; its source facts MUST remain pending.
+- Failed commit notification without durable capture evidence MUST NOT be treated as proof of successful capture or justify an invented acknowledgement.
 
-- **Given** custom source returns empty Id, null/unserializable payload, missing contract or default no-consumer payload.
-- **When** owning save capture runs.
-- **Then** factory failure aborts save capture and source facts stay pending; invalid RaisedEvent construction alone had not rejected input.
+## Contract boundaries
 
-## DOMAIN-007-AC-02 — Observe targetless successful acknowledgement
+Normal durable fan-out requires a nonempty ID, serializable nonnull concrete payload, registered contract and applicable targets. Validation of the standalone RaisedEvent constructor is not selected here. Whether a valid custom targetless batch should fail, stay pending or be acknowledged is undecided; no downstream delivery follows from an empty batch.
 
-- **Given** a valid event uses custom providers returning no targets.
-- **When** save and observed commit succeed.
-- **Then** no outgoing target rows are committed but the captured source event can still be acknowledged; this is observed, not an approved delivery guarantee.
+## Acceptance criteria
 
-## DOMAIN-007-AC-03 — Keep targetless failed commit uncertain
+### DOMAIN-007-AC-03 — Keep targetless failed commit uncertain
 
-- **Given** targetless captured event has no outgoing keys and commit notification fails.
-- **When** reconciliation executes.
-- **Then** key verification cannot prove committed capture; acknowledgement remains tied to observed/verified outcome rather than assuming success.
+- **Given** a targetless captured fact has no outgoing keys and its commit notification fails.
+- **When** capture reconciliation attempts to establish the outcome.
+- **Then** outgoing-key verification cannot prove capture committed; acknowledgement remains dependent on observed or verified success rather than assumed success.
+
+## Open decisions
+
+These original identifiers and heading anchors remain reserved, not normative scenarios. No replacement IDs are assigned before the underlying policy and identity migration are decided.
+
+### DOMAIN-007-AC-01 — Fail invalid custom fact capture
+
+Reserved — [GAP-DUR-010](../GAPS.md#gap-dur-010). The original composite includes invalid-fact rejection and the absence of constructor validation. Rejection is retained in Guarantees; the entire ID is reserved rather than silently dropping the constructor clause.
+
+### DOMAIN-007-AC-02 — Observe targetless successful acknowledgement
+
+Reserved — [GAP-DUR-011](../GAPS.md#gap-dur-011). Acknowledgement of a valid zero-target capture is undecided. The original no-row acknowledgement assertion remains reserved, not a delivery guarantee.
+
+- [GAP-DUR-008](../GAPS.md#gap-dur-008): the related policy remains undecided; its recommendation is not approved.

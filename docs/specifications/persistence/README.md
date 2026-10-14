@@ -1,40 +1,37 @@
-# Persistence and transaction consistency — Behavioural specification
+# Persistence capability catalogue
 
-**Scope:** `IDurableEntry`, `IDurableStore<T>`, `OwnedEntry<T>`, public `DurableStore<TContext,TEntry>` operations/protected provider extension boundary, `DurableEntryConfiguration.Configure`; model/transaction helpers and store variants in capability pages.
+[Specification index](../INDEX.md) · [Documentation index](../../README.md)
 
 ## Purpose
-Preserve durable local effects, retained identities and conditional ownership within explicit database boundaries without asserting distributed atomicity.
 
-## Contracts, preconditions and postconditions
-Pre: suitable relational provider, configured models/schema and standard store lifecycle; host-owned arbitrary model writes may bypass safeguards. Post: successful supported operations are observable through independent database reads. External transport effects and another context are outside local transaction participation.
+Provider implementers and host authors need retained target identity, local transaction consistency and honest failure/cancellation outcomes. This catalogue defines durable outcomes rather than a particular query, index algorithm or universal provider-support claim.
 
-## Invariants
-- Persisted MessageId/TargetId identifies delivery work and EventId/TargetId protects retained logical target uniqueness.
-- Configured-context effects and owned local completion must commit together where local dispatcher integration applies.
-- A database claim cannot retract an issued remote effect.
+## Capability lifecycle
 
-## Failure, cancellation and consistency
-Criteria below distinguish invalid use, failed execution, unsupported boundaries and loss of ownership. Required criteria protect established repository contracts; observed criteria are unapproved compatibility baselines. Proposed criteria are expressly unapproved. Unknown specifications have no decided acceptance outcome and are unresolved decisions, not executable requirements.
+Each retained delivery key identifies one target work record, and retained logical event/target uniqueness protects against duplicate representations while preserving sibling targets. Local inbox/outbox delivery commits configured-context effects with owned completion. Another context, database or external operation is outside that result.
 
-## Limitations
-- No universal provider/locking/isolation guarantee, SKIP LOCKED promise, universal DateTime.Kind enforcement or cross-database transaction.
-- Bulk store mutations do not guarantee refresh of caller-tracked entities.
-- Schema/index details are compatibility lookup in reference/persistence.md, not a mandate for every future internal storage design.
+## Shared contract boundaries
 
-## Implementation trace
-These locations explain contract ownership; they do not mandate internal implementation structure.
+The host supplies a relational provider, mapped schema, scoped context and required capability integration. Standard stores guard positive claim/cleanup budgets and propagate I/O cancellation. Ownership is temporary authority for conditional settlement, not a guarantee that the supplied snapshot is current or that an external effect can be revoked. Ambiguous commit results require evidence, not an assumption of rollback.
 
-- [src/Clean.Messaging/Persistence/IDurableEntry.cs](../../../src/Clean.Messaging/Persistence/IDurableEntry.cs)
-- [src/Clean.Messaging/Persistence/IDurableStore.cs](../../../src/Clean.Messaging/Persistence/IDurableStore.cs)
-- [src/Clean.Messaging.EntityFrameworkCore/DurableEntryConfiguration.cs](../../../src/Clean.Messaging.EntityFrameworkCore/DurableEntryConfiguration.cs)
-- [src/Clean.Messaging.EntityFrameworkCore/DurableStore.cs](../../../src/Clean.Messaging.EntityFrameworkCore/DurableStore.cs)
+The [coding standards](../../CODING_STANDARDS.md) establish ownership, identity, transaction, failure and resource obligations. Intentional public operation and persisted-contract compatibility further constrain these contracts. Reference pages describe implementation; they do not independently approve unresolved policy. Each numbered page separates required outcomes from reserved original obligations.
 
 ## Open decisions
-The [gap register](../GAPS.md) records unresolved input domains, provider evidence and proposed changes. [INDEX.md](../INDEX.md) explains classification authority and cross-capability ownership.
+
+Additional time/input-domain requirements remain in [GAP-CORE-004](../GAPS.md#gap-core-004). Provider scope and uncertain-commit attribution remain in [GAP-CORE-005](../GAPS.md#gap-core-005); none of its recommendations certifies a provider or weakens established local atomicity.
 
 ## Specifications
 
 - [PERSIST-001 — Retained logical target uniqueness](PERSIST-001-retained-logical-target-uniqueness.md)
 - [PERSIST-002 — Local completion atomicity](PERSIST-002-local-completion-atomicity.md)
 - [PERSIST-003 — Store cancellation and invalid claim boundaries](PERSIST-003-store-cancellation-and-invalid-claim-boundaries.md)
-- [PERSIST-004 — Commit ambiguity and provider verification](PERSIST-004-commit-ambiguity-and-provider-verification.md)
+- [PERSIST-004 — Commit ambiguity and provider boundaries](PERSIST-004-commit-ambiguity-and-provider-verification.md)
+
+## Implementation trace
+
+These links locate public/provider contracts for lookup; they do not prescribe internal structure.
+
+- [src/Clean.Messaging/Persistence/IDurableEntry.cs](../../../src/Clean.Messaging/Persistence/IDurableEntry.cs)
+- [src/Clean.Messaging/Persistence/IDurableStore.cs](../../../src/Clean.Messaging/Persistence/IDurableStore.cs)
+- [src/Clean.Messaging.EntityFrameworkCore/DurableEntryConfiguration.cs](../../../src/Clean.Messaging.EntityFrameworkCore/DurableEntryConfiguration.cs)
+- [src/Clean.Messaging.EntityFrameworkCore/DurableStore.cs](../../../src/Clean.Messaging.EntityFrameworkCore/DurableStore.cs)

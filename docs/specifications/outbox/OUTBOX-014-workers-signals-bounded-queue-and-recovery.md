@@ -1,27 +1,44 @@
 # OUTBOX-014 — Workers, signals, bounded queue and recovery
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: OutboxSignal.WaitAsync/Wake, OutboxWorker, OutboxRecoveryWorker and shared WorkLoop. No persisted notification, global FIFO or fixed-latency guarantee.
+Outgoing work must survive missed hints and abandoned workers while bounded queueing and scoped processing keep durable recovery from exhausting host resources.
 
-Purpose: execute committed due work eventually under healthy host/store conditions. Preconditions: valid options and resolvable scoped services. Worker startup wakes, periodic recovery wakes, hints coalesce; bounded queued/active work with configured concurrency. Leases start before queue wait; renewal only starts when processing, so stalled queued ownership can expire. Claim errors back off; processing errors log and later work continues.
+## Guarantees
 
-## OUTBOX-014-AC-01 — Recover lost signal and crashed queued claims
+- Startup and periodic recovery MUST allow eligible retained outgoing work to be rediscovered without the original enqueue/commit signal.
+- Wake hints MUST be coalescible and pending waits MUST honor cancellation.
+- Queue capacity and concurrent execution MUST remain bounded by configuration with operation-scoped claiming and processing.
+- Claim/processing infrastructure failures MUST be reported without inventing completion, and later recovery MUST remain possible with bounded claim retry backoff.
 
-- **Given** commit hint was lost or host crashed after claiming queued entries.
-- **When** restart/recovery runs and stale leases expire.
-- **Then** eligible committed work becomes attemptable again, potentially increasing Attempts without prior handler completion.
+The independent basis is the [coding standards](../../CODING_STANDARDS.md), especially the cited identity, lifetime, failure and local-transaction requirements. Coding standards sections 6, 7 and 9 establish bounded resource/lifetime ownership, restart recovery and truthful infrastructure failure; hints are not the durable work ledger.
 
-## OUTBOX-014-AC-02 — Coalesce signals and cancel waits
+## Contract boundaries
 
-- **Given** multiple Wake calls occur and a later wait has a cancelled token.
-- **When** WaitAsync consumes or waits for an in-memory hint.
-- **Then** wake counts are not persisted; available work, not signal count, drives claims and cancellation can stop a wait.
+Recovery depends on host progress, eligible ownership and available persistence; it is not FIFO completion, immediate wake delivery or success despite permanent destination failure. Queued claims can expire before handling. No abandoned-acquisition budget is selected here.
 
-## OUTBOX-014-AC-03 — Continue after infrastructure recovery
+## Acceptance criteria
 
-- **Given** claim/processing infrastructure is temporarily unavailable.
-- **When** the running worker logs failures and configured recovery wakes after availability returns.
-- **Then** durable work is retried without being marked delivered by infrastructure-error logging.
+### OUTBOX-014-AC-02 — Coalesce signals and cancel waits
+
+- **Given** multiple commit/recovery hints accumulate, or a signal wait is pending during host cancellation.
+- **When** the waiter resumes or is cancelled.
+- **Then** hints coalesce without becoming a counted durable ledger and cancellation terminates the wait.
+
+### OUTBOX-014-AC-03 — Continue after infrastructure recovery
+
+- **Given** claim/processing infrastructure fails while retained unresolved targets and a running host remain.
+- **When** workers recover and continue.
+- **Then** failures are logged, repeated claim retries use configured bounded backoff, and later eligible work runs within queue/concurrency bounds and valid operation scopes.
+
+## Open decisions
+
+The following original acceptance identifiers remain reserved; current behavior and unapproved recommendations do not establish normative authority.
+
+### OUTBOX-014-AC-01 — Recover lost signal and crashed queued claims
+
+Reserved pending [GAP-CLAIM-001](../GAPS.md#gap-claim-001). Recovery after lost signals or queued-worker crashes remains required. The original composite additionally counts an abandoned acquisition without completed handling; decide budget accounting/exhaustion before restoring it.
+
+The complete original identifier remains reserved, not reassigned to its supported subset. Restore it only on approval of its original obligation, or approve an explicit split/replacement under new identifiers.

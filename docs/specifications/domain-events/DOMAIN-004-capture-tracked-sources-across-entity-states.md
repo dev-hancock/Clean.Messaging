@@ -1,33 +1,47 @@
 # DOMAIN-004 — Capture tracked sources across entity states
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: DomainEventCapture.Capture(DbContext) snapshots tracked source entities and directly enumerates each Events collection; tracker.Capture<DomainEventCapture>. [GAP-DUR-010](../GAPS.md#gap-dur-010) covers source assumptions.
+Applications need capture to follow their selected pending facts on tracked event sources, not an incidental entity-dirty flag or a requirement to inherit the supplied aggregate base. Recipients need the concrete message contract and logical event identity to survive that boundary.
 
-Contracts: any tracked IDomainEventSource, not only AggregateRoot. Preconditions: stable valid source collection during save. Added/Modified/Unchanged/Deleted tracked sources are included; detached/untracked sources excluded. Each source event is transformed through OutboxMessage<object> but serialized by concrete runtime payload type. Captures deduplicate (DomainEventCapture type,eventId) across all sources in that context/pending transaction. Source enumeration has no event-list snapshot/lock, payload immutability check or unique-ID validation.
+## Guarantees
 
-## DOMAIN-004-AC-01 — Capture unchanged and custom tracked sources
+- Valid pending facts from tracked IDomainEventSource entities MUST participate in capture regardless of Added, Modified, Unchanged or Deleted state. Untracked sources MUST NOT be discovered by this context’s capture.
+- Capture MUST preserve the fact’s ID as EventId and serialize its concrete payload contract. The selected targets MUST share a new delivery identity for that capture batch.
+- An empty pending collection MUST NOT create outgoing work or acknowledgements merely because its source is tracked.
 
-- **Given** tracked custom/aggregate sources in Added, Modified, Unchanged or Deleted state contain valid events and untracked sources also contain events.
-- **When** an intercepted owning save runs.
-- **Then** tracked sources contribute captures independent of entity state; untracked sources do not.
+## Contract boundaries
 
-## DOMAIN-004-AC-02 — Serialize concrete event payload
+The application supplies a stable, valid pending collection and payload during save. The context and sources have one owner; this integration does not supply concurrent collection synchronization or an atomic domain snapshot. Source-ID collisions and additional custom-source guarantees are not resolved by this contract.
 
-- **Given** a custom RaisedEvent holds a registered concrete payload through object.
-- **When** capture stages and owning save commits.
-- **Then** outgoing contract/payload is concrete, event Id becomes EventId and target batch has a new delivery identity.
+## Acceptance criteria
 
-## DOMAIN-004-AC-03 — Keep empty collections inert
+### DOMAIN-004-AC-01 — Capture unchanged and custom tracked sources
 
-- **Given** tracked sources have empty Events collections.
-- **When** an owning save commits.
-- **Then** no domain outgoing entries or domain acknowledgements are created solely because a source is tracked.
+- **Given** valid pending facts exist on custom and aggregate sources tracked as Added, Modified, Unchanged or Deleted, and on other untracked sources.
+- **When** the intercepted owning save captures facts.
+- **Then** all tracked sources contribute their facts regardless of entity state and untracked sources contribute none.
 
-## DOMAIN-004-AC-04 — Do not authorize concurrent source mutation
+### DOMAIN-004-AC-02 — Serialize concrete event payload
 
-- **Given** a live Events collection or payload mutates concurrently with save capture.
-- **When** current capture enumerates it.
-- **Then** there is no supplied synchronization/snapshot guarantee; enumeration/serialization can fail or capture a source-derived view, not a guaranteed atomic domain snapshot.
+- **Given** a pending RaisedEvent contains a registered concrete payload through object.
+- **When** capture is staged and the owning save commits.
+- **Then** outgoing work carries the concrete contract/payload, the original ID as EventId and a new delivery identity shared by its selected targets.
+
+### DOMAIN-004-AC-03 — Keep empty collections inert
+
+- **Given** tracked sources have empty pending collections.
+- **When** the owning save commits.
+- **Then** tracking alone creates neither domain outgoing entries nor domain acknowledgements.
+
+### DOMAIN-004-AC-04 — Do not authorize concurrent source mutation
+
+- **Given** a caller mutates a live pending collection or payload concurrently with save capture.
+- **When** the caller observes the capture attempt.
+- **Then** no synchronized or atomic domain snapshot is guaranteed; enumeration or serialization may fail or reflect the source’s mutable view.
+
+## Open decisions
+
+- [GAP-DUR-010](../GAPS.md#gap-dur-010): the related policy remains undecided; its recommendation is not approved.

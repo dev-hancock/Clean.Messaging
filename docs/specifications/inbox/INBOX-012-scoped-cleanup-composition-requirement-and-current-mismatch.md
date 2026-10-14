@@ -1,15 +1,30 @@
-# INBOX-012 — Scoped cleanup composition requirement and current mismatch
+# INBOX-012 — Scoped cleanup composition requirement
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Required behaviour
+## Intent
 
-**Evidence:** Normative: [coding standards](../../CODING_STANDARDS.md) require scoped dependencies not be captured by singleton services. Descriptive counter-evidence: AddInbox registers singleton IHostedService InboxCleanupWorker whose constructor takes scoped IInboxStore. [GAP-DUR-005](../GAPS.md#gap-dur-005); this specification is not a statement that current source conforms.
+An application must be able to start a scope-validating host and run cleanup without retaining a scoped persistence context for the singleton worker's lifetime.
 
-Purpose/invariant: safe lifetime composition under scope validation. Applies to cleanup and any singleton extension dependencies. Current source can fail host scope validation or retain a root-resolved scoped store when validation is disabled; source review is not a successful-host claim.
+## Guarantees
 
-## INBOX-012-AC-01 — Resolve cleanup without captive scoped persistence
+- Hosted cleanup MUST compose successfully with scope validation enabled and MUST NOT directly retain a scoped store/context for the host lifetime.
+- Each cleanup operation MUST own and dispose an appropriate persistence scope without leaking its context across cleanup operations.
 
-- **Given** default inbox registrations with service-provider scope validation enabled.
-- **When** the host resolves hosted cleanup services.
-- **Then** required outcome: cleanup composition resolves without consuming a scoped store from the root; current constructor/registration appears to violate this outcome.
+The independent basis is the [coding standards](../../CODING_STANDARDS.md), especially the cited identity, lifetime, failure and local-transaction requirements. Coding standards section 6 requires singleton-to-scoped dependencies to be resolved through bounded operation scopes; this lifetime safety requirement is independent of current worker wiring.
+
+## Contract boundaries
+
+This requirement applies to standard Inbox hosted cleanup and its configured scoped persistence services. It does not certify arbitrary application replacements or make a DbContext thread-safe. A host configured without scope validation does not waive the requirement.
+
+## Acceptance criteria
+
+### INBOX-012-AC-01 — Resolve cleanup without captive scoped persistence
+
+- **Given** standard Inbox cleanup is registered with scoped persistence and scope validation enabled.
+- **When** the host resolves its hosted worker and runs successive cleanup operations.
+- **Then** composition does not fail for a singleton-to-scoped capture, and each cleanup operation uses and disposes its own valid scope rather than retaining a root-scoped context.
+
+## Open decisions
+
+[GAP-DUR-005](../GAPS.md#gap-dur-005) records the required composition correction. The implementation choice does not reopen or weaken the safe-lifetime guarantee.

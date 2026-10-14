@@ -1,37 +1,24 @@
-# Dead letters, retention and observability — Behavioural specification
+# Dead letters, retention and observability capability catalogue
 
-**Scope:** `DeadLetter`, `RequeueResult`, `IDeadLetterStore<T>.Get/Requeue/Discard`, public EF DeadLetterStore; `IDurableStore<T>.Cleanup`; `MessageMetrics.Completed/Retried/DeadLettered/LeaseLost`. Manager collection semantics and replay are specified in inbox/outbox.
+[Specification index](../INDEX.md) · [Documentation index](../../README.md)
 
 ## Purpose
-Expose failed durable work for controlled requeue/discard, remove eligible terminal evidence, and report lifecycle observations at their actual boundaries.
 
-## Contracts, preconditions and postconditions
-Pre: management targets retained eligible rows; standard mapped stores and configured observation listeners. Post: successful mutations are independently readable; listing is a snapshot, not an audit log. Cleanup changes deduplication evidence and cannot undo external effects.
+Operators need controlled repair of retained failed targets, bounded removal of terminal evidence and measurements with clear local meaning. These capabilities expose lifecycle outcomes; they are not a durable audit stream or exactly-once count of business effects.
 
-## Invariants
-- Requeue/discard preserve operation identity rather than inventing unrelated work.
-- Successful targets are not reset to repair a sibling.
-- Metrics/logs represent only their declared local observation boundary.
+## Capability lifecycle
 
-## Failure, cancellation and consistency
-Criteria below distinguish invalid use, failed execution, unsupported boundaries and loss of ownership. Required criteria protect established repository contracts; observed criteria are unapproved compatibility baselines. Proposed criteria are expressly unapproved. Unknown specifications have no decided acceptance outcome and are unresolved decisions, not executable requirements.
+Dead-letter snapshots identify failed targets and their diagnostics. Requeue restores the failed target’s eligibility without replacing its identity or reopening a successful sibling; discard hides it from active dead-letter listing while retaining terminal state until cleanup. Cleanup protects unresolved work and limits each deletion pass. Metrics attribute the observation they name, not a stronger distributed outcome.
 
-## Limitations
-- No all-key atomic manager batch, pagination cursor, payload inspector, exactly-once metrics, universal distributed trace or reversal of discarded external effects.
-- Pending rows and inbox admissions have different retention from terminal target entries.
+## Shared contract boundaries
 
-## Implementation trace
-These locations explain contract ownership; they do not mandate internal implementation structure.
+Management addresses retained per-target work and standard transaction boundaries; a manager collection is not an all-key atomic transaction. Terminal target retention and inbox admission retention are distinct. Deleting completion evidence changes replay/duplicate horizons and cannot reverse external effects. Listeners/exporters and any logger enrichment belong to the host.
 
-- [src/Clean.Messaging.Abstractions/DeadLetter.cs](../../../src/Clean.Messaging.Abstractions/DeadLetter.cs)
-- [src/Clean.Messaging.Abstractions/RequeueResult.cs](../../../src/Clean.Messaging.Abstractions/RequeueResult.cs)
-- [src/Clean.Messaging/DeadLetters/IDeadLetterStore.cs](../../../src/Clean.Messaging/DeadLetters/IDeadLetterStore.cs)
-- [src/Clean.Messaging.EntityFrameworkCore/DeadLetterStore.cs](../../../src/Clean.Messaging.EntityFrameworkCore/DeadLetterStore.cs)
-- [src/Clean.Messaging.EntityFrameworkCore/DurableStore.cs](../../../src/Clean.Messaging.EntityFrameworkCore/DurableStore.cs)
-- [src/Clean.Messaging/Processing/MessageMetrics.cs](../../../src/Clean.Messaging/Processing/MessageMetrics.cs)
+The [coding standards](../../CODING_STANDARDS.md) establish ownership, identity, transaction, failure and resource obligations. Intentional public operation and persisted-contract compatibility further constrain these contracts. Reference pages describe implementation; they do not independently approve unresolved policy. Each numbered page separates required outcomes from reserved original obligations.
 
 ## Open decisions
-The [gap register](../GAPS.md) records unresolved input domains, provider evidence and proposed changes. [INDEX.md](../INDEX.md) explains classification authority and cross-capability ownership.
+
+[GAP-CORE-007](../GAPS.md#gap-core-007) leaves settlement-log wording undecided. [GAP-DUR-004](../GAPS.md#gap-dur-004) leaves admission retention policy undecided. GAP-INTENT-LIFE-001 reserves which terminal timestamp governs a recently discarded row; its earlier-dead-letter deletion behavior is not approved.
 
 ## Specifications
 
@@ -40,3 +27,14 @@ The [gap register](../GAPS.md) records unresolved input domains, provider eviden
 - [OPS-003 — Terminal cleanup boundaries](OPS-003-terminal-cleanup-boundaries.md)
 - [OPS-004 — Observable metric boundary](OPS-004-observable-metric-boundary.md)
 - [OPS-005 — Settlement log attribution](OPS-005-settlement-log-attribution.md)
+
+## Implementation trace
+
+These links locate public/provider contracts for lookup; they do not prescribe internal structure.
+
+- [src/Clean.Messaging.Abstractions/DeadLetter.cs](../../../src/Clean.Messaging.Abstractions/DeadLetter.cs)
+- [src/Clean.Messaging.Abstractions/RequeueResult.cs](../../../src/Clean.Messaging.Abstractions/RequeueResult.cs)
+- [src/Clean.Messaging/DeadLetters/IDeadLetterStore.cs](../../../src/Clean.Messaging/DeadLetters/IDeadLetterStore.cs)
+- [src/Clean.Messaging.EntityFrameworkCore/DeadLetterStore.cs](../../../src/Clean.Messaging.EntityFrameworkCore/DeadLetterStore.cs)
+- [src/Clean.Messaging.EntityFrameworkCore/DurableStore.cs](../../../src/Clean.Messaging.EntityFrameworkCore/DurableStore.cs)
+- [src/Clean.Messaging/Processing/MessageMetrics.cs](../../../src/Clean.Messaging/Processing/MessageMetrics.cs)

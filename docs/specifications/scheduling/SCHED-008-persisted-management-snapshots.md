@@ -2,34 +2,45 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** IScheduleReader.GetGroup(groupId, target?, token) returns ScheduleStatus snapshots: ScheduleId/ScheduleGroupId/Target/MessageData/due/attempts/retry/three terminal timestamps/code/message. Claims, lease, version and exception type are not management fields.
+Operators need nonmutating persisted group snapshots to inspect retained work without confusing a read with cancellation or repair.
 
-**Evidence:** IScheduleReader.cs; ScheduleStatus.cs; ScheduleStore.GetGroup.
+IScheduleReader and immutable ScheduleStatus descriptions plus the standards on snapshot reads and retained evidence establish this read boundary. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+## Guarantees
 
-## SCHED-008-AC-01 — Group snapshots include terminal history
+- Group reads MUST report matching persisted rows, including retained terminal history, without mutating work.
+- Unsaved local changes and read failures MUST not be presented as committed snapshots or successful empty results.
 
-**Given** mixed active and terminal rows in two groups and targets.
-**When** GetGroup reads with a target or no target.
-**Then** only the requested group is returned, target filter is exact when supplied, all targets when omitted, and terminal rows remain included.
+## Contract boundaries
 
-## SCHED-008-AC-02 — Ordering is stable for equal due instants
+Snapshots are bounded by retention and their observation time; they do not establish external receipt, current lease ownership or future ordering. Exact list ordering is undecided.
 
-**Given** group rows with differing due times and IDs including equal due times.
-**When** GetGroup completes.
-**Then** snapshots are ordered by due instant then schedule identity rather than completion or insertion order.
+## Acceptance criteria
 
-## SCHED-008-AC-03 — Read does not expose unsaved mutations
+### SCHED-008-AC-01 — Group snapshots include terminal history
 
-**Given** a context has an unsaved addition/cancellation and persisted rows.
-**When** GetGroup is used.
-**Then** the result describes persisted state, not an in-memory merge, and changing snapshot data does not mutate stored lifecycle state.
+**Given** persisted active and terminal schedules in a group and other groups/targets.
+**When** the group is read with an optional target filter.
+**Then** the result contains the matching retained history and excludes nonmatching group/target work.
 
-## SCHED-008-AC-04 — Empty group and read I/O failures
+### SCHED-008-AC-03 — Read does not expose unsaved mutations
 
-**Given** a group is absent or storage is unavailable/cancelled.
-**When** GetGroup is used.
-**Then** absent group returns an empty list; storage failure/cancellation propagates rather than being an empty successful read.
+**Given** unsaved additions or mutations exist in the reader scope.
+**When** a persisted group snapshot is read.
+**Then** those changes are not exposed as committed state; neither the read nor changes to returned snapshot data mutate durable lifecycle state.
+
+### SCHED-008-AC-04 — Empty group and read I/O failures
+
+**Given** an absent group or a failing/cancelled persistence read.
+**When** the read result is observed.
+**Then** absence yields an empty snapshot; read failure or cancellation is not converted into empty success.
+
+## Open decisions
+
+### SCHED-008-AC-02 — Ordering is stable for equal due instants
+
+**Reserved — no normative acceptance scenario.** Are claim order, group/timer order and manager list order contractual, and what tie-breaks or fairness are promised?
+
+Decision: [GAP-INTENT-WF-001](../GAPS.md#gap-intent-wf-001) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.

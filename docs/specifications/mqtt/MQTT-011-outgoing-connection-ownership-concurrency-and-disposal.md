@@ -1,18 +1,47 @@
 # MQTT-011 — Outgoing connection ownership, concurrency and disposal
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) | [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
-**Evidence:** [MqttConnection](../../../src/Clean.Messaging.Outbox.Dispatch.Mqtt/Connection/MqttConnection.cs), [transport](../../../src/Clean.Messaging.Outbox.Dispatch.Mqtt/Publishing/MqttOutboxTransport.cs), registration singleton lifetime.
+## Intent
 
-## MQTT-011-AC-01 — Concurrent disconnected dispatches share connection establishment
-**Given** the singleton client is disconnected and multiple outgoing attempts call for it concurrently, **When** the first connection succeeds and others recheck connectivity, **Then** they use the shared connected client without simultaneously establishing separate connections. Once connected, publication is not globally serialized by this connection lock.
+Outgoing attempt owners need one shared establishment boundary, cancellation and explicit ownership without a hidden second retry controller.
 
-## MQTT-011-AC-02 — Connection rejection and later disconnect require another durable attempt
-**Given** connect returns while the client remains disconnected, **When** dispatch requests the client, **Then** the attempt fails rather than publishing on assumed connectivity. **Given** a later disconnected client, **When** a later durable attempt requests it, **Then** it attempts reconnection; no independent outgoing background reconnect/retry loop is supplied.
+Authority: Explicit singleton connection ownership and deliberate durable-owned retry/no second adapter retry documentation, protected by coding standards on lifecycle and cancellation. Composition does not authorize arbitrary publish/disposal races. See [coding standards](../../CODING_STANDARDS.md).
 
-## MQTT-011-AC-03 — Connection wait cancellation does not imply publication
-**Given** connection establishment is serialized and another caller waits for the lock or cancellable connect I/O, **When** its attempt token is cancelled, **Then** waiting/I/O can cancel without manufactured publication or durable completion. An already-connected fast-path result still relies on subsequent PublishAsync's cancellation handling.
+## Guarantees
 
-## MQTT-011-AC-04 — Disposal releases owned client without promised graceful disconnect
-**Given** the outgoing connection owns its semaphore/client, **When** DI disposes it after host work stops, **Then** both are disposed; there is no explicit outgoing graceful-disconnect operation or promise that racing active publications are drained. Concurrent-use/disposal and full client thread safety remain [GAP-TX-006](../GAPS.md#gap-tx-006).
+- Concurrent disconnected callers MUST share serialized connection establishment and reuse successful connectivity. This MUST NOT imply globally serialized publication or full client concurrency certification.
+- Failed establishment MUST fail the attempt rather than assume publication. Later durable attempts MUST reconnect when disconnected; the adapter MUST NOT add an outgoing background retry loop.
+- Cancellable connection wait/I/O MUST receive the attempt token without manufactured publication/completion on cancellation.
+
+## Contract boundaries
+
+Connected-client return is not publication success; PublishAsync still receives cancellation. The connection lock is not a global publish lock. Client/semaphore release belongs to the connection after host work stops; graceful disconnect, draining and racing disposal support remain unresolved.
+
+## Acceptance criteria
+
+### MQTT-011-AC-01 — Concurrent disconnected dispatches share connection establishment
+
+- **Given** a disconnected shared client with concurrent outgoing callers.
+- **When** one connection succeeds and waiting callers recheck.
+- **Then** they reuse it without simultaneous separate establishment; publication is not globally serialized by the connection lock.
+
+### MQTT-011-AC-02 — Connection rejection and later disconnect require another durable attempt
+
+- **Given** establishment returns disconnected, or a later disconnect occurs.
+- **When** the failed or later durable attempt requests connectivity.
+- **Then** the failed attempt does not publish on assumed connectivity and a later request reconnects, without an independent background retry loop.
+
+### MQTT-011-AC-03 — Connection wait cancellation does not imply publication
+
+- **Given** another caller waits on establishment or cancellable connect I/O.
+- **When** its attempt token cancels.
+- **Then** wait/I/O can cancel without publication/completion; an already-connected result still relies on PublishAsync cancellation.
+
+## Open decisions
+
+The original IDs and exact heading anchors below remain reserved, not normative scenarios. No replacement IDs are assigned before a decision.
+
+### MQTT-011-AC-04 — Disposal releases owned client without promised graceful disconnect
+
+What publish/disposal overlap and graceful-disconnect/draining contract is supported? Reserve the whole ownership/lifecycle composite rather than narrowing its ID to disposal alone. See [GAP-TX-006](../GAPS.md#gap-tx-006); the recommendation remains unapproved.

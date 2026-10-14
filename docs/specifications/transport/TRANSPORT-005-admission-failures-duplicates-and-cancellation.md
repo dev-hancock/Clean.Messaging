@@ -1,26 +1,56 @@
 # TRANSPORT-005 — Admission failures, duplicates and cancellation
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) | [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
-**Evidence:** [TransportIngress](../../../src/Clean.Messaging.Inbox.Ingress/TransportIngress.cs), [InboxIngressException](../../../src/Clean.Messaging.Inbox.Ingress/InboxIngressException.cs), dependency [InboxStore](../../../src/Clean.Messaging.Inbox.EntityFrameworkCore/InboxStore.cs), [inbox mappings](../../../src/Clean.Messaging.Inbox.EntityFrameworkCore/InboxConfiguration.cs), [Inbox](../../../src/Clean.Messaging.Inbox/Inbox.cs).
+## Intent
 
-The EF observations here are conditional on correct relational configuration, retained admissions and registered consumer contracts. Generic ingress itself implements neither duplicate detection nor acknowledgement.
+Ingress operators need retained retries to recognize work, diagnostic failures and cancellation without manufactured success. Caller failure must not erase an independently committed admission.
 
-## TRANSPORT-005-AC-01 — Mapping and persistence failures remain distinguishable
-**Given** a serializer/mapper that throws before inbox invocation, **When** ingress accepts the envelope, **Then** it exposes `InboxIngressException` preserving the original exception as its inner cause (or preserves an existing ingress exception). **Given** successful mapping followed by an inbox admission failure, **When** admission fails, **Then** that failure escapes without ingress wrapping.
+Authority: Coding standards explicitly require failure distinctions, cooperative cancellation, retained duplicate protection and transaction boundaries. Independent admission is the persistence integration boundary, not an inferred join to caller transactions. Blanket synchronous wrapping and identity-content conflict rules lack approval. See [coding standards](../../CODING_STANDARDS.md).
 
-## TRANSPORT-005-AC-02 — Concurrent retained duplicate admissions create one obligation set
-**Given** valid identical envelopes, registered consumers and the relational inbox schema, **When** two concurrent admissions compete using the same message/event identity, **Then** successful admissions leave one admission and no duplicate event/consumer entries; completed retained consumer work is not reset by the duplicate.
+## Guarantees
 
-## TRANSPORT-005-AC-03 — Identity conflict does not overwrite retained data
-**Given** a retained admission and a newly mapped envelope sharing either message ID or event ID but carrying different payload/context, **When** admission reaches the built-in EF store, **Then** it returns as already accepted without replacing the stored admission or comparing payload equivalence. This is an observed conflict policy, not approval for identity reuse for distinct operations.
+- Mapping and admission failures MUST remain distinguishable with diagnostic causes; neither MUST become successful admission.
+- Concurrent legitimate repeats with the same identity MUST leave one retained admission/consumer-obligation set without resetting retained completed targets.
+- Admission I/O MUST receive the attempt token and observed I/O cancellation MUST remain cancellation without invented success.
+- Independent relational admission MUST reject ambient participation and remain independent of unrelated caller rollback after admission committed.
 
-## TRANSPORT-005-AC-04 — Admission I/O cancellation remains cancellation
-**Given** successful mapping and an admission operation blocked on cancellable I/O, **When** its supplied cancellation token is cancelled, **Then** inbox I/O receives that token and the cancellation exception propagates without ordinary ingress-failure wrapping; no successful admission result is manufactured. A commit that already happened is not undone by later cancellation.
+## Contract boundaries
 
-## TRANSPORT-005-AC-05 — Synchronous mapper cancellation currently becomes a mapping fault
-**Given** a mapper or payload serializer throwing `OperationCanceledException` before inbox invocation, **When** ingress runs even with its token cancelled, **Then** generic ingress wraps that exception as `InboxIngressException`, since the synchronous mapper has no token contract. This discrepancy with normative cancellation guidance is pending [GAP-TX-002](../GAPS.md#gap-tx-002), not an approved cancellation policy.
+Duplicate protection requires correct relational mappings, distinct-operation identity uniqueness and retained evidence; this is not provider certification. Failed/cancelled calls may have uncertain commit outcomes, not proven rollback. Generic ingress supplies no acknowledgement or separate duplicate store.
 
-## TRANSPORT-005-AC-06 — Independent admission rejects ambient transactions
-**Given** valid ingress input and an ambient transaction in the caller, **When** the EF inbox admission path is invoked, **Then** admission fails rather than joining that transaction. **Given** no ambient transaction and committed admission, **When** unrelated caller work later fails, **Then** that caller failure does not by itself erase admitted work.
+## Acceptance criteria
+
+### TRANSPORT-005-AC-02 — Concurrent retained duplicate admissions create one obligation set
+
+- **Given** identical legitimate envelopes and correct relational storage with retained consumer work.
+- **When** concurrent admissions of that identity succeed.
+- **Then** one admission and one event/consumer obligation remain without resetting completed targets.
+
+### TRANSPORT-005-AC-04 — Admission I/O cancellation remains cancellation
+
+- **Given** mapping succeeded and admission is blocked on cancellable I/O.
+- **When** the supplied attempt token is cancelled.
+- **Then** I/O cancellation propagates without ordinary ingress wrapping or invented success; committed work is not undone.
+
+### TRANSPORT-005-AC-06 — Independent admission rejects ambient transactions
+
+- **Given** valid input and independently composed relational admission.
+- **When** admission occurs inside an ambient transaction, or unrelated caller work fails after separate admission committed.
+- **Then** ambient participation is rejected and a separately committed admission is not erased merely by caller failure.
+
+## Open decisions
+
+The original IDs and heading anchors below remain reserved, not normative scenarios. No replacement IDs are assigned before a decision.
+
+### TRANSPORT-005-AC-01 — Mapping and persistence failures remain distinguishable
+
+The original exception-wrapping criterion covers all serializer/mapper exceptions, including cancellation. Resolve that classification before restoring this composite ID. See [GAP-TX-002](../GAPS.md#gap-tx-002); the recommendation remains unapproved.
+
+### TRANSPORT-005-AC-03 — Identity conflict does not overwrite retained data
+
+How should reused identity with different content be treated? Coordinate this incoming case with the retained-content conflict decision rather than approving acceptance without comparison. See [GAP-DUR-007](../GAPS.md#gap-dur-007); the recommendation remains unapproved.
+
+### TRANSPORT-005-AC-05 — Synchronous mapper cancellation currently becomes a mapping fault
+
+How should synchronous cancellation differ from attempt shutdown and ordinary mapping failure? See [GAP-TX-002](../GAPS.md#gap-tx-002); the recommendation remains unapproved.

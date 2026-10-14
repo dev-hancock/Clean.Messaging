@@ -1,19 +1,50 @@
 # MQTT-005 — Acknowledgement follows admission, not consumer effects
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) | [Specification index](../INDEX.md)
 
-**Classification:** Required behaviour
-**Normative basis:** coding standards §9 requires separating durable admission from dispatch, not acknowledging broker admission failures as successful processing, and preserving explicit poison policy; repository instructions preserve identities and transaction boundaries.
-**Source evidence:** [worker Receive](../../../src/Clean.Messaging.Inbox.Ingress.Mqtt/Runtime/MqttInboxWorker.cs), [ingress handler](../../../src/Clean.Messaging.Inbox.Ingress.Mqtt/MqttInboxIngressHandler.cs), dependency [InboxStore](../../../src/Clean.Messaging.Inbox.EntityFrameworkCore/InboxStore.cs).
+## Intent
 
-## MQTT-005-AC-01 — Successful admission transfers processing responsibility
-**Given** valid input and available durable inbox integration with consumers paused, **When** the message is received and durable admission commits, **Then** successful MQTT acknowledgement can occur before consumer completion, but not before admission success; consumers remain independently outstanding local work.
+Operators need acknowledgement to transfer responsibility to durable work, not falsely imply consumer completion. Explicit poison discard must stay distinct from persistence failure.
 
-## MQTT-005-AC-02 — Admission failure is not acknowledged as success
-**Given** valid route/payload/metadata but unavailable database or failing durable admission, **When** receipt fails admission, **Then** it remains unacknowledged as a successful admission and reconnect is requested; no consumer success or poison discard is invented to hide the persistence fault.
+Authority: Coding standards explicitly require admission-before-ACK, preservation of poison policy, persistence failure distinction and retained per-target completion. None follows merely from QoS. See [coding standards](../../CODING_STANDARDS.md).
 
-## MQTT-005-AC-03 — Duplicate receipt after lost acknowledgement does not reset work
-**Given** admission committed, acknowledgement was lost, and the broker retained session/delivery state and redelivers the same IDs, **When** the duplicate reaches the relational inbox and is acknowledged, **Then** one retained admission/obligation set remains and completed retained consumers are not deliberately reset. This is conditional redelivery, not a promise that the broker retains any particular session.
+## Guarantees
 
-## MQTT-005-AC-04 — Explicit poison policy stays distinct from admission failure
-**Given** unroutable, malformed-metadata or ingress-mapping poison input, **When** receipt classifies it, **Then** the worker logs rejection and attempts acknowledgement without storing an inbox poison/dead-letter record; ordinary durable admission errors do not silently use this discard policy.
+- Successful valid-receipt acknowledgement MUST follow awaited admission and MUST NOT depend on consumer completion. Automatic acknowledgement MUST NOT bypass admission.
+- Ordinary admission failure MUST NOT become successful acknowledgement or poison discard; recovery MUST be requested.
+- Legitimate repeats recognized within retained duplicate evidence MUST NOT reset or duplicate retained obligations.
+- Already-classified poison MUST follow existing logged acknowledgement-attempt policy without inbox poison/dead-letter archival.
+
+## Contract boundaries
+
+Admission transfers local processing responsibility, not completed business effects. ACK may fail after commit; redelivery depends on retained broker/session state. Already-classified poison includes ordinary mapping poison, not approval of wrapping attempt cancellation. No archive or broker retention horizon is promised.
+
+## Acceptance criteria
+
+### MQTT-005-AC-01 — Successful admission transfers processing responsibility
+
+- **Given** valid input and durable inbox with consumers paused.
+- **When** admission commits and acknowledgement succeeds.
+- **Then** ACK follows admission and can precede consumer completion; local work remains outstanding.
+
+### MQTT-005-AC-02 — Admission failure is not acknowledged as success
+
+- **Given** valid payload/metadata but unavailable/failing admission.
+- **When** admission fails.
+- **Then** no successful ACK, consumer success or poison discard hides the fault, and recovery is requested.
+
+### MQTT-005-AC-03 — Duplicate receipt after lost acknowledgement does not reset work
+
+- **Given** committed admission, lost ACK and broker redelivery of the same IDs with local evidence retained.
+- **When** relational inbox recognizes and acknowledges the legitimate duplicate.
+- **Then** one admission/obligation set remains without resetting completed targets; broker retention is not inferred.
+
+### MQTT-005-AC-04 — Explicit poison policy stays distinct from admission failure
+
+- **Given** already-classified routing, metadata or ordinary ingress-mapping poison.
+- **When** receipt follows poison policy.
+- **Then** rejection is logged and ACK attempted without an inbox poison/dead-letter record; ordinary admission errors do not use discard.
+
+## Open decisions
+
+None.

@@ -2,36 +2,47 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** Runtime AddSagas adds runtime scheduling but not outbox/EF stores. EF AddSagas on MessagingBuilder, ModelBuilder and typed/untyped DbContextOptionsBuilder includes scheduling integration. SagaOptions exposes Section, SerializerOptions, Retention, CleanupInterval and CleanupBatchSize.
+Hosts need explicit saga persistence/effect/timer composition and predictable options without assuming runtime registration provisions storage.
 
-**Evidence:** Both DependencyInjection.cs; SagaValidation.cs; SagaRuntimeValidation.cs; SagaConfiguration.cs; SagaOptions.cs; SagaOptionsValidator.cs.
+Public Saga/EF registration and SagaOptions compatibility plus the standards on provider separation, explicit host binding and positive resource bounds establish this boundary. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Intent gaps:** [GAP-WF-013](../GAPS.md#gap-wf-013).
+## Guarantees
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+- A usable saga composition MUST supply its store, outgoing writer, scheduling integration and configured definitions.
+- EF options/model integration MUST include saga and timer requirements; default options and positive cleanup bounds MUST remain compatible.
 
-## SAGA-003-AC-01 — Runtime composition is incomplete without stores/effects
+## Contract boundaries
 
-**Given** runtime saga registration exists without saga persistence, writer or outgoing services.
-**When** startup resolves saga integration.
-**Then** required dependencies prevent valid durable startup; registration is not automatic outbox installation.
+Hosts own relational schema, migrations and same-context Outbox composition. Section constants are not automatic binding. Null serializer options/extreme values remain open and no saga retry/concurrency policy is introduced.
 
-## SAGA-003-AC-02 — EF model and interceptors include timers
+## Acceptance criteria
 
-**Given** a valid relational context uses saga EF builder/model/options composition.
-**When** state and timers are saved via typed or untyped overload.
-**Then** saga and scheduling mappings/interception participate together; same installed hook is not duplicated; missing model/interceptors/nonrelational provider fail validation.
+### SAGA-003-AC-01 — Runtime composition is incomplete without stores/effects
 
-## SAGA-003-AC-03 — Defaults and explicit binding
+**Given** runtime saga registration lacks durable stores or outgoing/timer dependencies.
+**When** a usable host composition starts.
+**Then** missing dependencies are exposed rather than treating registration as complete durable installation.
 
-**Given** fresh saga options or IConfiguration with Messaging:Sagas but no binding callback.
-**When** saga composition reads options.
-**Then** JSON web defaults, retention 30 days, cleanup interval 1 hour and batch 500 apply unless explicitly configured; Section alone does not bind values.
+### SAGA-003-AC-02 — EF model and interceptors include timers
 
-## SAGA-003-AC-04 — Cleanup numeric boundaries
+**Given** typed or untyped EF model/options saga integration is installed.
+**When** the host prepares the scoped relational context.
+**Then** saga mapping/hooks and scheduling timer integration are included equivalently, without duplicating the same hook instances; deficient model/interceptors or nonrelational use fail validation. Outbox persistence remains separately composed.
 
-**Given** Retention/CleanupInterval/BatchSize are individually zero or negative then positive.
-**When** startup validation runs.
-**Then** zero/negative values reject and positive values pass; no saga-specific retry/lease/concurrency options are inferred.
+### SAGA-003-AC-03 — Defaults and explicit binding
+
+**Given** fresh SagaOptions and a configuration section without explicit binding.
+**When** initial settings are read.
+**Then** state JSON uses Web defaults separately from message serialization; retention is 30 days, cleanup interval 1 hour and batch 500; Messaging:Sagas does not bind itself.
+
+### SAGA-003-AC-04 — Cleanup numeric boundaries
+
+**Given** cleanup retention, interval or batch is zero or negative.
+**When** saga options are validated.
+**Then** each invalid positive-only setting is rejected and supported positive values are accepted; no saga-specific retry, lease or execution-concurrency option is inferred from these cleanup settings.
+
+## Open decisions
+
+Separate boundary questions remain unapproved in the [decision register](../GAPS.md): `GAP-WF-013`. These do not suspend the independently justified guarantees above.

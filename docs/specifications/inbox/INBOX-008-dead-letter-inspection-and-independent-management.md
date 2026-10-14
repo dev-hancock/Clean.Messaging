@@ -1,39 +1,57 @@
 # INBOX-008 — Dead-letter inspection and independent management
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Evidence:** Source: `IInboxManager`, `InboxManager`, shared `DeadLetterStore.Get/Requeue/Discard`. [Inbox](../../reference/inbox.md) is descriptive.
+Operators need to inspect unsuccessful targets and explicitly requeue or discard eligible work without erasing its diagnosis, resetting successful siblings, or implying all-or-nothing batch management.
 
-Contracts: GetDeadLetters(default limit 100), Requeue, Discard and RequeueResult (shared). Positive listing limit, nonnull key collections; empty collections valid. List includes dead-lettered but not discarded entries ordered by dead-letter timestamp; it is not snapshot pagination. Operations process keys sequentially in independent transactions and preserve original event/message identity, payload and failure diagnostics. Requeue resets Attempts and terminal/claim/due state; Discard retains dead-letter timestamp and diagnostics. No batch atomicity or inverse discard operation.
+## Guarantees
 
-## INBOX-008-AC-01 — Inspect active dead letters with limit validation
+- Inspection MUST return only retained nondiscarded dead letters, bounded by a positive limit and ordered oldest dead-letter first.
+- Requeue MUST transition only eligible dead-letter keys, preserve envelope/identity and latest diagnosis, reset attempts and terminal/claim/due state, and make transitioned work available to processing.
+- Discard MUST mark only eligible nondiscarded dead letters without deleting their diagnosis or pretending they succeeded. Valid empty collections MUST produce zero transitions.
+- Management counts MUST reflect requested keys and successful transitions, not invented batch atomicity. Previously committed per-key changes MUST remain visible after later failure or cancellation.
+- Null collections and ambient transactional mutations MUST be rejected visibly.
 
-- **Given** dead-lettered, discarded and nonterminal entries exist.
-- **When** GetDeadLetters uses positive limit or a nonpositive limit.
-- **Then** positive listing exposes at most that many nondiscarded dead letters including key/event/attempt/failure summary; nonpositive limit fails.
+The independent basis is the [coding standards](../../CODING_STANDARDS.md), especially the cited identity, lifetime, failure and local-transaction requirements. Public management/result compatibility and coding standards sections 7 and 9 for failure diagnosis, per-target transitions and explicit transaction boundaries establish the management contract.
 
-## INBOX-008-AC-02 — Requeue only eligible keys and wake
+## Contract boundaries
 
-- **Given** eligible, absent, completed and repeated keys are supplied.
-- **When** Requeue finishes.
-- **Then** only eligible dead letters become unresolved, Attempts zero and claim/due/terminal state cleared, diagnostics retained; Requested counts all supplied keys and Requeued counts transitions.
+Requeue and discard operate independently per requested key, including repeated keys; Requested counts supplied keys, while success counts actual eligible transitions. They are not an API to reset successful entries. Wake hints reduce latency but do not constitute durability. Cleanup may later remove diagnosis under the separate retention contract.
 
-## INBOX-008-AC-03 — Discard and empty collections
+## Acceptance criteria
 
-- **Given** an eligible dead letter, already discarded/absent keys, or an empty collection.
-- **When** Discard or Requeue runs.
-- **Then** eligible discard records DiscardedAt without losing diagnosis; ineligible keys do not transition and empty collections return zero work.
+### INBOX-008-AC-01 — Inspect active dead letters with limit validation
 
-## INBOX-008-AC-04 — Expose partial success and reject ambient management
+- **Given** retained rows include nondiscarded dead letters and other lifecycle states.
+- **When** inspection is requested with a positive limit or a nonpositive limit.
+- **Then** positive inspection returns at most that many active dead letters in oldest-first order, including their key, event ID, attempts and failure summary, while a nonpositive limit fails.
 
-- **Given** several keys, with cancellation/failure after an earlier transition, or Transaction.Current present.
-- **When** a manager mutation runs.
-- **Then** earlier independently committed transitions remain durable on later failure; ambient mutations are rejected rather than joining a batch transaction.
+### INBOX-008-AC-02 — Requeue only eligible keys and wake
 
-## INBOX-008-AC-05 — Reject null management collections
+- **Given** requested keys include eligible dead letters and ineligible or repeated keys.
+- **When** requeue completes.
+- **Then** only eligible transitions count as Requeued, Requested counts supplied keys, identities/payload/diagnosis remain, attempts and terminal/claim/due state reset, and successful requeue signals processing.
 
-- **Given** Requeue or Discard receives a null key collection.
-- **When** the manager operation is requested.
-- **Then** ArgumentNullException is observable and no key transition occurs.
+### INBOX-008-AC-03 — Discard and empty collections
+
+- **Given** eligible and already discarded keys are submitted, or a valid empty collection is supplied.
+- **When** discard or empty management completes.
+- **Then** discard records only eligible transitions without deletion or success completion, and empty operations return zero counts.
+
+### INBOX-008-AC-04 — Expose partial success and reject ambient management
+
+- **Given** an earlier per-key mutation committed before later failure/cancellation, or an ambient transaction surrounds management.
+- **When** the batch is interrupted or ambient mutation is attempted.
+- **Then** earlier durable transitions remain rather than rolling back as a batch, and ambient mutation is rejected.
+
+### INBOX-008-AC-05 — Reject null management collections
+
+- **Given** a null key collection is supplied.
+- **When** requeue or discard is requested.
+- **Then** ArgumentNullException remains observable and no key transition occurs; the null collection is not a valid empty request.
+
+## Open decisions
+
+None.

@@ -2,40 +2,51 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
+## Intent
 
-**Contracts and applicability:** Cleanup removes old terminal schedules, not active overdue work. There is no public schedule upsert, recurring schedule, requeue/dead-letter repair, failed-work restart or lease-renewal API. Read/cancel are not repair commands.
+Operators need retention that bounds terminal schedule evidence without expiring active work or confusing read/cancel with repair.
 
-**Evidence:** ScheduleStore.Cleanup; ScheduleCleanupWorker.cs; SchedulingOptions.Cleanup; all owned public scheduling surfaces.
+The standards on bounded retention, durable unfinished work and explicit management limitations establish this lifecycle boundary; exact cleanup cutoffs and cadence require policy selection. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+## Guarantees
 
-## SCHED-016-AC-01 — Strict terminal retention cutoff
+- Retention cleanup MUST exclude active work and remain bounded by configured cleanup resources.
+- Deleting a terminal schedule MUST not be represented as preserving its identity/history or as repairing another capability’s delivery outcome.
 
-**Given** dispatched/cancelled/failed rows before, equal to and after cutoff plus very old active work.
-**When** cleanup completes.
-**Then** only terminal rows with terminal timestamp strictly before cutoff are deleted; equal/after and active rows remain.
+## Contract boundaries
 
-## SCHED-016-AC-02 — Cleanup is periodic and bounded
+No failure requeue, recurrence, timer upsert or automatic compensation is promised. Exact cutoff equality, batch ordering and initial cleanup timing are open. Other durable evidence has independent retention.
 
-**Given** more eligible rows than batch times cap.
-**When** a cleanup tick runs.
-**Then** deletion uses batches ordered by CreatedAt, stops at configured per-run cap with warning when capped, and leaves remaining work for later ticks.
+## Acceptance criteria
 
-## SCHED-016-AC-03 — Cleanup recovery and initial timing
+### SCHED-016-AC-04 — Deletion removes identity protection and history
 
-**Given** a host starts or a cleanup query fails.
-**When** periodic cleanup lifecycle continues.
-**Then** no immediate startup purge is assumed; failed cleanup can retry on a later tick without changing active schedules into terminal ones.
+**Given** terminal schedule evidence has been physically deleted.
+**When** the same identity is submitted later or history is requested.
+**Then** that deleted row supplies neither identity exclusion nor history; other outgoing/saga evidence has its own lifetime.
 
-## SCHED-016-AC-04 — Deletion removes identity protection and history
+### SCHED-016-AC-05 — Cancellation is not failure requeue
 
-**Given** an old terminal schedule is physically removed.
-**When** the same identity is inserted later.
-**Then** the deleted schedule row no longer prevents reuse or supplies history; retained outgoing/timer evidence has its own independent lifetime.
+**Given** a retained failed schedule.
+**When** supported read or cancellation completes.
+**Then** the schedule remains failed; those operations do not reopen, reschedule or compensate it.
 
-## SCHED-016-AC-05 — Cancellation is not failure requeue
+## Open decisions
 
-**Given** a retained failed schedule is read or cancelled.
-**When** management APIs complete.
-**Then** it remains failed and is not automatically reopened, rescheduled or compensated.
+### SCHED-016-AC-01 — Strict terminal retention cutoff
+
+**Reserved — no normative acceptance scenario.** What exact cutoff equality, batch ordering, startup cadence and purge version/timestamp semantics are promised?
+
+Decision: [GAP-INTENT-WF-004](../GAPS.md#gap-intent-wf-004) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### SCHED-016-AC-02 — Cleanup is periodic and bounded
+
+**Reserved — no normative acceptance scenario.** What exact cutoff equality, batch ordering, startup cadence and purge version/timestamp semantics are promised? Are claim order, group/timer order and manager list order contractual, and what tie-breaks or fairness are promised?
+
+Decision: [GAP-INTENT-WF-004](../GAPS.md#gap-intent-wf-004), [GAP-INTENT-WF-001](../GAPS.md#gap-intent-wf-001) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### SCHED-016-AC-03 — Cleanup recovery and initial timing
+
+**Reserved — no normative acceptance scenario.** What exact cutoff equality, batch ordering, startup cadence and purge version/timestamp semantics are promised?
+
+Decision: [GAP-INTENT-WF-004](../GAPS.md#gap-intent-wf-004) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.

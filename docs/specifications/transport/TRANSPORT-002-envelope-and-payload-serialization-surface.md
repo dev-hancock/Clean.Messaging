@@ -1,17 +1,43 @@
 # TRANSPORT-002 — Envelope and payload serialization surface
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) | [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
-**Evidence:** all four `.cs` files and the [project](../../../src/Clean.Messaging.Transport/Clean.Messaging.Transport.csproj) in Transport; especially [serializer](../../../src/Clean.Messaging.Transport/TransportSerializer.cs). Source-only observation; no compatibility certification.
+## Intent
 
-`TransportMessage` is a sealed record with required `Contract` and `Payload`, optional `MessageId`, `EventId`, `CorrelationId`, `CausationId`, `ContentType`, and default empty `Headers`. `TransportHeader(Name, Value)` permits repeated names. Required members impose compile-time initialization, not runtime nonblank/content validation. `Map(source)` is synchronous and receives neither envelope nor cancellation. Payload serializer methods constrain message types to `notnull`.
+Transport implementers need an envelope for payload and metadata, and an interoperable payload serializer without a hidden envelope.
 
-## TRANSPORT-002-AC-01 — Web JSON payload round trip
-**Given** a supported payload type with ordinary public properties and the built-in `TransportSerializers.Json`, **When** the payload is serialized and deserialized as that type, **Then** UTF-8 web-default JSON preserves its values and the serialized bytes contain payload data rather than an added transport envelope.
+Authority: Deliberate public TransportMessage/TransportHeader representation and advertised TransportSerializers.Json format, protected by coding standards on serialized shapes and compatibility. See [coding standards](../../CODING_STANDARDS.md).
 
-## TRANSPORT-002-AC-02 — Invalid or null JSON is not a successful payload
-**Given** malformed JSON, an unsupported JSON shape/type, or JSON `null` for a nullable reference deserialization result, **When** built-in payload deserialization runs, **Then** it throws rather than returning an accepted default message; a null result produces `InvalidOperationException` before any durable admission.
+## Guarantees
 
-## TRANSPORT-002-AC-03 — Header multiplicity and absent metadata remain representable
-**Given** an envelope with two headers of the same name, omitted optional IDs/content type, and explicitly initialized payload/contract, **When** its members are read, **Then** both headers remain present and optional values remain absent; the record performs no deduplication, contract registration check, or identity generation.
+- The public envelope MUST retain explicitly supplied payload, contract and header-list values, including repeated header names and absent optional metadata. Construction MUST NOT invent identity.
+- The built-in JSON serializer MUST encode supported payload values as UTF-8 web-default JSON and read compatible payloads without adding an envelope.
+- Malformed, incompatible or null JSON payload results MUST fail rather than become accepted default messages.
+
+## Contract boundaries
+
+This covers supported built-in JSON payloads, not arbitrary serializers or schema evolution. Required members are initialization obligations, not runtime identity validation. The synchronous payload mapper receives a value, not an envelope. Optional metadata remains representable even where a later boundary rejects it.
+
+## Acceptance criteria
+
+### TRANSPORT-002-AC-01 — Web JSON payload round trip
+
+- **Given** a supported payload and the built-in JSON serializer.
+- **When** the value is serialized and deserialized as the same compatible type.
+- **Then** UTF-8 web-default JSON preserves its values and contains payload rather than an added envelope.
+
+### TRANSPORT-002-AC-02 — Invalid or null JSON is not a successful payload
+
+- **Given** malformed JSON, an incompatible shape or a JSON null result.
+- **When** built-in deserialization is requested.
+- **Then** it throws rather than accepting a default message; null results raise InvalidOperationException.
+
+### TRANSPORT-002-AC-03 — Header multiplicity and absent metadata remain representable
+
+- **Given** an envelope with repeated same-name headers and absent optional IDs/content type.
+- **When** its initialized values are read.
+- **Then** both headers and absent values remain unchanged without deduplication, registration checks or generated identity.
+
+## Open decisions
+
+None.

@@ -1,35 +1,18 @@
-# Message identity and execution context — Behavioural specification
+# Message identity and execution context
 
-**Scope:** `EntryKey`, `IMessageContext`, `MessageContext.Push` and disposable scope; `ClaimId.Create`; envelope identities and metadata are specified in inbox/outbox/domain/scheduling/saga/transport pages.
+[Specification index](../INDEX.md) · [Capability reference](../../reference/contracts.md)
 
 ## Purpose
-Separate logical operations, deliveries, targets, related operations and temporary ownership, while exposing execution-local metadata to handlers.
 
-## Contracts, preconditions and postconditions
-Pre: use identities appropriate to the initiating API and dispose metadata scopes in nesting order. Post: handlers see the selected delivery metadata and follow-on operations use the capability-specific propagation rules. Correlation and causation are optional relationships, not uniqueness constraints.
+Retry and recovery preserve logical operations and individual target completion. Execution-local delivery metadata lets handlers relate follow-on work without treating correlation as duplicate identity.
 
-## Invariants
-- Retries of stored work preserve logical, delivery and target identity.
-- A target's success is independent of sibling failure.
-- Ownership tokens describe attempts, not business identity.
+## Capability boundaries
 
-## Failure, cancellation and consistency
-Criteria below distinguish invalid use, failed execution, unsupported boundaries and loss of ownership. Required criteria protect established repository contracts; observed criteria are unapproved compatibility baselines. Proposed criteria are expressly unapproved. Unknown specifications have no decided acceptance outcome and are unresolved decisions, not executable requirements.
+Message/event/target IDs, optional correlation/causation and temporary claim tokens have distinct roles. IMessageContext/MessageContext expose scoped metadata, not EventId, ownership authority, a database transaction or distributed tracing. Initiating capabilities own identity generation and propagation.
 
-## Limitations
-- No exactly-once external effect, universal identifier meaning for every property called Id, automatic distributed tracing, or global ordering.
-- Cross-context disposal and out-of-order scopes are unresolved; execution-local state can flow into child async work and is not durable.
+## Decisions and limitations
 
-## Implementation trace
-These locations explain contract ownership; they do not mandate internal implementation structure.
-
-- [src/Clean.Messaging.Abstractions/EntryKey.cs](../../../src/Clean.Messaging.Abstractions/EntryKey.cs)
-- [src/Clean.Messaging.Abstractions/IMessageContext.cs](../../../src/Clean.Messaging.Abstractions/IMessageContext.cs)
-- [src/Clean.Messaging/MessageContext.cs](../../../src/Clean.Messaging/MessageContext.cs)
-- [src/Clean.Messaging/ClaimId.cs](../../../src/Clean.Messaging/ClaimId.cs)
-
-## Open decisions
-The [gap register](../GAPS.md) records unresolved input domains, provider evidence and proposed changes. [INDEX.md](../INDEX.md) explains classification authority and cross-capability ownership.
+Normal awaited, nested scope use is covered; unusual disposal/child lifetimes remain [GAP-CORE-002](../GAPS.md#gap-core-002). Opaque token usability does not automatically approve its exact GUID encoding. Retention limits recovery evidence; external effects can repeat.
 
 ## Specifications
 

@@ -1,15 +1,31 @@
-# INBOX-015 — Unapproved replay failure improvement
+# INBOX-015 — Replay failure reconciliation policy
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Proposed behaviour
+## Intent
 
-**Evidence:** Recommendation only, not approved: [GAP-DUR-003](../GAPS.md#gap-dur-003). Motivated by normative failure transparency and descriptive replay reconciliation evidence; no implementation change was made.
+Callers need truthful replay outcomes when concurrent requests or persistence failures make insertion results uncertain. Recovery must not conceal an unreconciled failure; deciding how to recognize a successful concurrent outcome is a separate policy choice.
 
-Purpose: candidate reconciliation semantics, subject to approval. Preconditions: failed replay save; postcondition proposal: duplicate conflicts may reconcile but unrelated unreconciled storage errors stay visible. Does not decide count attribution or pagination.
+## Guarantees
 
-## INBOX-015-AC-01 — Proposal reconcile only confirmed duplicate outcomes
+- Replay MUST preserve the required failure-transparency contract in [INBOX-013](INBOX-013-replay-failure-transparency-requirement.md).
 
-- **Given** a replay save fails with either a confirmed concurrent uniqueness conflict or an unrelated update failure.
-- **When** an approved implementation of the proposal is evaluated.
-- **Then** unapproved proposal: return reconciled results only for confirmed successful/duplicate outcomes and preserve the other error; this criterion is not yet binding.
+## Contract boundaries
+
+Failure transparency is required independently of the reconciliation policy. The proposed duplicate-only rule does not establish target suitability, continuation behavior, count attribution or all-or-nothing replay. An uncertain partial outcome remains possible.
+
+The [Inbox reference](../../reference/inbox.md) describes the current persistence behavior. The decision below separates that behavior and the suspected failure-transparency discrepancy from the unapproved reconciliation proposal.
+
+## Acceptance criteria
+
+No resolved acceptance criteria are assigned on this page. The original identifiers remain reserved under Open decisions.
+
+## Open decisions
+
+The following original acceptance identifiers remain reserved; current behavior and unapproved recommendations do not establish normative authority.
+
+### INBOX-015-AC-01 — Proposal reconcile only confirmed duplicate outcomes
+
+Reserved pending [GAP-DUR-003](../GAPS.md#gap-dur-003). The proposed reconcile-only-confirmed-duplicates algorithm is unapproved. Required failure transparency remains in force, but the exact evidence, concurrent count attribution and partial-outcome recovery protocol need a decision.
+
+The complete original identifier remains reserved, not reassigned to its supported subset. Restore it only on approval of its original obligation, or approve an explicit split/replacement under new identifiers.

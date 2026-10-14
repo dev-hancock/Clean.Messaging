@@ -2,32 +2,31 @@
 
 A capability-based catalogue of behavioural contracts and unresolved decisions. Each numbered specification owns its acceptance criteria; capability README pages hold shared contracts, invariants and limitations.
 
-## Requirement authority
+## Reading the contracts
 
-- **Required behaviour** is grounded in normative repository instructions or explicit public contracts.
-- **Observed behaviour** describes implementation evidence, not an approved requirement.
-- **Proposed behaviour** is conditional on an explicit owner decision.
-- **Unknown behaviour** identifies undecided intent without unconditional acceptance outcomes.
+Every numbered specification states its intent, guarantees, contract boundaries, acceptance criteria and open decisions. Guarantees describe intended outcomes grounded in repository requirements or deliberate public contracts, not an inventory of current implementation branches.
 
-Acceptance criteria inherit their owning specification's classification unless explicitly stated otherwise. Moving a document or linking a test does not approve a proposal or establish conformance. [GAPS.md](GAPS.md) retains unresolved questions and contractual discrepancies.
+Acceptance criteria under **Acceptance criteria** express those obligations. An existing identifier retained under **Open decisions** is reserved for its original meaning: it is not an approved scenario and must not be reused for a different requirement. Existing question identifiers remain questions, not additional acceptance criteria. [GAPS.md](GAPS.md) preserves the unresolved question, original assertion and proposed disposition.
+
+Source observations, recommendations and test mappings do not approve contractual choices. A linked test supplies traceability, not authority or proof of conformance. Implementation descriptions belong in [reference documentation](../README.md); pending decisions do not silently become guarantees.
 
 ## Capabilities
 
 ### [Claims, leases and settlement ownership](claims-leases/README.md)
 
-- [CLAIM-001 — Claim eligibility and attempt accounting](claims-leases/CLAIM-001-claim-eligibility-and-attempt-accounting.md)
+- [CLAIM-001 — Recoverable ownership of durable work](claims-leases/CLAIM-001-claim-eligibility-and-attempt-accounting.md)
 - [CLAIM-002 — Stale settlement rejection](claims-leases/CLAIM-002-stale-settlement-rejection.md)
-- [CLAIM-003 — Owned-state and expiry predicates](claims-leases/CLAIM-003-owned-state-and-expiry-predicates.md)
+- [CLAIM-003 — Renewal and settlement preserve ownership lifecycle](claims-leases/CLAIM-003-owned-state-and-expiry-predicates.md)
 - [CLAIM-004 — Renewal loss and cooperative cancellation](claims-leases/CLAIM-004-renewal-loss-and-cooperative-cancellation.md)
 - [CLAIM-005 — Lease arithmetic and caller invariants](claims-leases/CLAIM-005-lease-arithmetic-and-caller-invariants.md)
 
 ### [Configuration, validation and host composition](configuration/README.md)
 
 - [CONFIG-001 — Host ownership and resource lifetimes](configuration/CONFIG-001-host-ownership-and-resource-lifetimes.md)
-- [CONFIG-002 — Core defaults and override preservation](configuration/CONFIG-002-core-defaults-and-override-preservation.md)
+- [CONFIG-002 — Public registration defaults and validation](configuration/CONFIG-002-core-defaults-and-override-preservation.md)
 - [CONFIG-003 — Registration identifier boundaries](configuration/CONFIG-003-registration-identifier-boundaries.md)
 - [CONFIG-004 — Startup validation and configuration binding](configuration/CONFIG-004-startup-validation-and-configuration-binding.md)
-- [CONFIG-005 — One messaging persistence context type](configuration/CONFIG-005-one-messaging-persistence-context-type.md)
+- [CONFIG-005 — Persistence-context composition constraints](configuration/CONFIG-005-one-messaging-persistence-context-type.md)
 - [CONFIG-006 — Complete boundary validation](configuration/CONFIG-006-complete-boundary-validation.md)
 
 ### [Core contracts and durable serialization](core-contracts/README.md)
@@ -49,7 +48,7 @@ Acceptance criteria inherit their owning specification's classification unless e
 - [DOMAIN-007 — Invalid custom facts and targetless acknowledgement](domain-events/DOMAIN-007-invalid-custom-facts-and-targetless-acknowledgement.md)
 - [DOMAIN-008 — Custom source collisions and acknowledgement failures](domain-events/DOMAIN-008-custom-source-collisions-and-acknowledgement-failures.md)
 - [DOMAIN-009 — Crash, recovery and retention boundaries](domain-events/DOMAIN-009-crash-recovery-and-retention-boundaries.md)
-- [DOMAIN-010 — Undecided source and acknowledgement contract](domain-events/DOMAIN-010-undecided-source-and-acknowledgement-contract.md)
+- [DOMAIN-010 — Event-source and acknowledgement contract](domain-events/DOMAIN-010-undecided-source-and-acknowledgement-contract.md)
 
 ### [Message identity and execution context](identity-context/README.md)
 
@@ -70,12 +69,12 @@ Acceptance criteria inherit their owning specification's classification unless e
 - [INBOX-007 — Signals, workers and restart recovery](inbox/INBOX-007-signals-workers-and-restart-recovery.md)
 - [INBOX-008 — Dead-letter inspection and independent management](inbox/INBOX-008-dead-letter-inspection-and-independent-management.md)
 - [INBOX-009 — Replay retained admissions into missing targets](inbox/INBOX-009-replay-retained-admissions-into-missing-targets.md)
-- [INBOX-010 — Entry cleanup and indefinite admission retention](inbox/INBOX-010-entry-cleanup-and-indefinite-admission-retention.md)
+- [INBOX-010 — Terminal cleanup and admission-retention boundary](inbox/INBOX-010-entry-cleanup-and-indefinite-admission-retention.md)
 - [INBOX-011 — Composition, mappings and public options](inbox/INBOX-011-composition-mappings-and-public-options.md)
-- [INBOX-012 — Scoped cleanup composition requirement and current mismatch](inbox/INBOX-012-scoped-cleanup-composition-requirement-and-current-mismatch.md)
+- [INBOX-012 — Scoped cleanup composition requirement](inbox/INBOX-012-scoped-cleanup-composition-requirement-and-current-mismatch.md)
 - [INBOX-013 — Replay failure transparency requirement](inbox/INBOX-013-replay-failure-transparency-requirement.md)
-- [INBOX-014 — Undecided admission and replay policies](inbox/INBOX-014-undecided-admission-and-replay-policies.md)
-- [INBOX-015 — Unapproved replay failure improvement](inbox/INBOX-015-unapproved-replay-failure-improvement.md)
+- [INBOX-014 — Admission and replay policy boundaries](inbox/INBOX-014-undecided-admission-and-replay-policies.md)
+- [INBOX-015 — Replay failure reconciliation policy](inbox/INBOX-015-unapproved-replay-failure-improvement.md)
 
 ### [Dead letters, retention and observability](observability/README.md)
 
@@ -129,7 +128,7 @@ Acceptance criteria inherit their owning specification's classification unless e
 - [PERSIST-001 — Retained logical target uniqueness](persistence/PERSIST-001-retained-logical-target-uniqueness.md)
 - [PERSIST-002 — Local completion atomicity](persistence/PERSIST-002-local-completion-atomicity.md)
 - [PERSIST-003 — Store cancellation and invalid claim boundaries](persistence/PERSIST-003-store-cancellation-and-invalid-claim-boundaries.md)
-- [PERSIST-004 — Commit ambiguity and provider verification](persistence/PERSIST-004-commit-ambiguity-and-provider-verification.md)
+- [PERSIST-004 — Commit ambiguity and provider boundaries](persistence/PERSIST-004-commit-ambiguity-and-provider-verification.md)
 
 ### [Worker lifecycle, signaling and recovery](recovery-lifecycle/README.md)
 
@@ -200,5 +199,5 @@ Acceptance criteria inherit their owning specification's classification unless e
 ## Related references
 
 - [Unresolved decisions](GAPS.md)
-- [Verification boundaries](TRACEABILITY.md)
+- [Verification boundaries](../reference/testing.md#verification-boundaries)
 - [Architecture](../reference/architecture.md)

@@ -1,20 +1,44 @@
 # MQTT-006 — Receive failures, poison acknowledgement and shutdown
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) | [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
-**Evidence:** [worker](../../../src/Clean.Messaging.Inbox.Ingress.Mqtt/Runtime/MqttInboxWorker.cs), [handler](../../../src/Clean.Messaging.Inbox.Ingress.Mqtt/MqttInboxIngressHandler.cs), dependency [Inbox](../../../src/Clean.Messaging.Inbox/Inbox.cs) and [InboxStore](../../../src/Clean.Messaging.Inbox.EntityFrameworkCore/InboxStore.cs).
+## Intent
 
-AutoAcknowledge is disabled. Each receipt resolves one route and a fresh async scope, awaits ingress then explicit acknowledgement with host stopping token. Handler preserves direct token cancellation and translates `InboxIngressException` to poison; it does not translate ordinary durable admission exceptions. No matching consumer contract fails before admission through the runtime consumer registry; an empty batch supplied to the EF store also cannot create a new admission because it lacks a first entry. These are not silently acknowledged poison.
+Receipt owners need ACK failure/shutdown to preserve committed work without manufactured protocol success or accidental poison classification.
 
-## MQTT-006-AC-01 — Acknowledgement failure requests recovery without erasing admission
-**Given** committed admission or already-classified poison, **When** explicit acknowledgement throws a non-shutdown exception, **Then** the worker logs the appropriate normal/poison acknowledgement failure and signals reconnect; previously committed admission stays available, and acknowledgement is not reported as successful by the exception path.
+Authority: Coding standards on cancellation/failure distinctions, truthful diagnostics and separate admission/ACK boundaries. No-consumer and synchronous wrapping policies remain unresolved. See [coding standards](../../CODING_STANDARDS.md).
 
-## MQTT-006-AC-02 — Shutdown cancellation leaves unsettled delivery unacknowledged
-**Given** admission/acknowledgement is awaiting cancellable work and the host stopping token is cancelled, **When** direct `OperationCanceledException` reaches receive handling, **Then** ordinary admission-failure logging/reconnect classification is suppressed and the delivery is not manufactured as acknowledged. Already committed database work is not automatically rolled back.
+## Guarantees
 
-## MQTT-006-AC-03 — No consumer is an admission failure rather than automatic poison discard
-**Given** valid MQTT payload/identity and mapping but no registered consumer for the mapped runtime message, **When** admission executes, **Then** the runtime consumer failure propagates through the ordinary admission-failure path and no successful acknowledgement is made; reconnect is requested rather than a durable poison record being created.
+- ACK failure MUST preserve committed admission, identify the appropriate receipt/poison ACK failure and request recovery without claiming confirmed ACK success.
+- Direct stopping cancellation MUST remain cancellation without ordinary admission-fault/reconnect classification or invented ACK success. Committed work MUST NOT be presented as rolled back by shutdown.
 
-## MQTT-006-AC-04 — Wrapped mapper cancellation currently reaches poison policy
-**Given** a synchronous mapper throws cancellation which generic ingress wraps as `InboxIngressException`, **When** MQTT handler observes that wrapped exception, **Then** it becomes poison and invokes the poison acknowledgement path; this differs from direct admission/shutdown cancellation. See [GAP-TX-002](../GAPS.md#gap-tx-002); this observation is not approval of the policy.
+## Contract boundaries
+
+An in-flight ACK can have uncertain remote outcome; no confirmed ACK is not proof the broker received nothing. Consumer progress is independent. No-consumer disposition belongs to admission, not automatic MQTT discard.
+
+## Acceptance criteria
+
+### MQTT-006-AC-01 — Acknowledgement failure requests recovery without erasing admission
+
+- **Given** committed admission or already-classified poison.
+- **When** explicit ACK throws a non-shutdown exception.
+- **Then** the appropriate ACK failure is logged and reconnect requested without erasing admission or reporting confirmed success.
+
+### MQTT-006-AC-02 — Shutdown cancellation leaves unsettled delivery unacknowledged
+
+- **Given** admission/ACK is awaiting cancellable work and the host stopping token is cancelled.
+- **When** asynchronous receipt work observes shutdown cancellation.
+- **Then** ordinary admission-fault logging/reconnect classification is suppressed without manufactured ACK; committed work is not automatically rolled back.
+
+## Open decisions
+
+The original IDs and exact heading anchors below remain reserved, not normative scenarios. No replacement IDs are assigned before a decision.
+
+### MQTT-006-AC-03 — No consumer is an admission failure rather than automatic poison discard
+
+Should valid no-consumer messages be rejected, retained for replay or have another admission policy? Reserve the full classification/ACK composite until decided. See [GAP-DUR-001](../GAPS.md#gap-dur-001); the recommendation remains unapproved.
+
+### MQTT-006-AC-04 — Wrapped mapper cancellation currently reaches poison policy
+
+Should wrapped mapper cancellation reach poison discard or preserve attempt cancellation? Recording current behavior approves no change. See [GAP-TX-002](../GAPS.md#gap-tx-002); the recommendation remains unapproved.

@@ -2,32 +2,47 @@
 
 [Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Unknown behaviour
+## Intent
 
-**Contracts and applicability:** Candidate compatibility facts: schedules have no renewal; batch ownership starts before slot waiting; dispatch requires current token and lease > now, while failure/retry settlement checks token and active state without lease expiry. Successful admitted dispatch has no final lease-expiry check. These facts are not approved ownership policy.
+Host operators need a deliberate lease policy for queued and long-running schedules before relying on expiry as a settlement boundary.
 
-**Evidence:** SchedulingWorker.cs; ScheduleStore.Retry/Fail; ScheduleExecutor.Dispatch; ScheduleEntry.Complete. Decision required: GAP-WF-003 and GAP-WF-004.
+The temporary-ownership and stale-token standards establish fencing, but do not independently select renewal, queue leasing or exact post-expiry settlement policy. See the [coding standards](../../CODING_STANDARDS.md) and [architecture boundary](../../reference/architecture.md).
 
-**Intent gaps:** [GAP-WF-003](../GAPS.md#gap-wf-003), [GAP-WF-004](../GAPS.md#gap-wf-004).
+## Guarantees
 
-**Preconditions/postconditions/invariants:** common sections apply; each scenario narrows the input boundary and observable committed result. Failure, concurrency and limits are scoped to the criteria below.
+- A replaced ownership token MUST not authorize local settlement.
+- Terminal schedule state MUST not be reopened by an expired attempt.
 
-## Question SCHED-010-Q-01 ? Queued claim outlives lease
+## Contract boundaries
 
-**Scenario:** a batch exceeds concurrency and a waiting row lease expires before admission; the dispatch gate is reached after expiry.
-**Decision question:** Is this conditional candidate the intended policy: pending GAP-WF-003, if current no-renewal behaviour is retained, that row performs no delivery and later recovery may reclaim it?
+These invariants do not choose whether expiry alone revokes a still-current token, or whether admission permits completion after expiry. No renewal, final deadline check or exactly-once external effect is implied.
 
-## Question SCHED-010-Q-02 ? Old unreclaimed token can record failure after expiry
+## Acceptance criteria
 
-**Scenario:** a dispatched attempt fails after its lease expired but before another claim replaces its token; failure/retry settlement runs.
-**Decision question:** Is this conditional candidate the intended policy: pending GAP-WF-004, if current token-only failure fencing is retained, the expired unreclaimed attempt can record retry/failure; a replaced token cannot?
+No acceptance criteria are assigned to the unresolved policies on this page. The cross-cutting guarantees above do not decide those policies.
 
-## Question SCHED-010-Q-03 ? Accepted dispatch may finish past its lease
+## Open decisions
 
-**Scenario:** the start gate succeeded before expiry and no competing successful mutation intervenes; same-context delivery and commit finish after expiry.
-**Decision question:** Is this conditional candidate the intended policy: pending GAP-WF-004, if current admission fencing is retained, completion can commit without a final unexpired-lease predicate; no exactly-once external claim follows?
+### Question SCHED-010-Q-01 ? Queued claim outlives lease
 
-## Question SCHED-010-Q-04 ? Decide renewal and queue exposure
+**Reserved — no normative acceptance scenario.** How does ownership remain usable while claimed work waits for capacity or execution outlasts a lease?
 
-**Scenario:** slow delivery and a preleased backlog threaten expiry; an ownership policy is selected.
-**Decision question:** Is this conditional candidate the intended policy: pending GAP-WF-003, a chosen renewal or lease-at-admission policy must define whether queued work remains owned and how ownership loss cancels execution; no unconditional outcome is approved?
+Decision: [GAP-WF-003](../GAPS.md#gap-wf-003) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### Question SCHED-010-Q-02 ? Old unreclaimed token can record failure after expiry
+
+**Reserved — no normative acceptance scenario.** What expiry rule governs admission, successful completion and retry/failure settlement?
+
+Decision: [GAP-WF-004](../GAPS.md#gap-wf-004) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### Question SCHED-010-Q-03 ? Accepted dispatch may finish past its lease
+
+**Reserved — no normative acceptance scenario.** What expiry rule governs admission, successful completion and retry/failure settlement?
+
+Decision: [GAP-WF-004](../GAPS.md#gap-wf-004) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.
+
+### Question SCHED-010-Q-04 ? Decide renewal and queue exposure
+
+**Reserved — no normative acceptance scenario.** How does ownership remain usable while claimed work waits for capacity or execution outlasts a lease?
+
+Decision: [GAP-WF-003](../GAPS.md#gap-wf-003) ([unapproved decision register](../GAPS.md)). The original identity and heading remain reserved; approval of a different or narrower outcome requires explicit retirement/splitting and new criterion identities, not reuse of this ID.

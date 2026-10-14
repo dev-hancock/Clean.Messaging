@@ -1,25 +1,41 @@
 # PERSIST-003 — Store cancellation and invalid claim boundaries
 
-[Capability contracts and boundaries](README.md) · [Specification index](../INDEX.md)
+[Capability catalogue](README.md) · [Specification index](../INDEX.md)
 
-**Classification:** Observed behaviour
-**Evidence:** Shared durable store methods forward I/O tokens and validate positive limit/lease; time arithmetic uses caller DateTime.
+## Intent
 
-Pre: explicit operation token, positive claim limit/lease and representable supplied instants. Post: invalid values do not successfully claim/delete; pre-I/O cancellation is surfaced without a fabricated success. Cancellation after an uncertain commit requires subsequent observation.
+Store callers need bounded operations to fail clearly on invalid budgets and to preserve cancellation instead of receiving fabricated database success. Invalid limits must not become unlimited acquisition or deletion.
 
-**Open decisions:** [GAP-CORE-004](../GAPS.md#gap-core-004).
+## Guarantees
 
-## PERSIST-003-AC-01 — Invalid claim
-**Given** limit <=0 or lease <=0.
-**When** Claim is requested.
-**Then** ArgumentOutOfRangeException is raised and no successful claim is returned.
+- Claim MUST reject a nonpositive limit or lease with ArgumentOutOfRangeException rather than return a successful claim.
+- Cleanup MUST reject a nonpositive limit with ArgumentOutOfRangeException rather than perform unrestricted deletion.
+- Asynchronous store I/O MUST honor supplied cancellation; cancellation before I/O MUST NOT be substituted with successful settlement or deletion.
 
-## PERSIST-003-AC-02 — Invalid cleanup limit
-**Given** cleanup limit <=0.
-**When** Cleanup is requested.
-**Then** ArgumentOutOfRangeException is raised rather than an unrestricted deletion.
+## Contract boundaries
 
-## PERSIST-003-AC-03 — Pre-cancelled database operation
-**Given** a cancelled token before a supported asynchronous store operation reaches I/O.
-**When** the operation is requested.
-**Then** the operation does not report successful settlement/deletion as a replacement for cancellation.
+These invalid-input outcomes belong to the standard public EF durable store. Callers provide positive limits/leases and representable instants on a consistent time basis. This page does not choose UTC-kind enforcement, claim-string validation or extension-only renewal policy. Cancellation racing a database commit can leave its outcome uncertain; it is not proof that storage was unchanged.
+
+## Acceptance criteria
+
+### PERSIST-003-AC-01 — Invalid claim
+
+- **Given** the requested claim limit or lease is nonpositive.
+- **When** Claim is requested.
+- **Then** ArgumentOutOfRangeException is raised and no successful claim is returned.
+
+### PERSIST-003-AC-02 — Invalid cleanup limit
+
+- **Given** the requested cleanup limit is nonpositive.
+- **When** Cleanup is requested.
+- **Then** ArgumentOutOfRangeException is raised instead of unrestricted deletion.
+
+### PERSIST-003-AC-03 — Pre-cancelled database operation
+
+- **Given** the supplied token is cancelled before a supported asynchronous store operation reaches I/O.
+- **When** the operation is requested.
+- **Then** it does not replace cancellation with a successful settlement or deletion result.
+
+## Open decisions
+
+- [GAP-CORE-004](../GAPS.md#gap-core-004): the related policy remains undecided; its recommendation is not approved.
