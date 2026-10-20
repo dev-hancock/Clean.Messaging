@@ -46,12 +46,18 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Clean.Messaging.Tests", "tests\Clean.Messaging.Tests\Clean.Messaging.Tests.csproj", "{8D7C3E0B-D7F2-4CFC-9ABC-C666DC722419}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Clean.Messaging.EntityFrameworkCore.Tests", "tests\Clean.Messaging.EntityFrameworkCore.Tests\Clean.Messaging.EntityFrameworkCore.Tests.csproj", "{272C6012-A8B3-4293-8BD7-73247A1301C1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{272C6012-A8B3-4293-8BD7-73247A1301C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{272C6012-A8B3-4293-8BD7-73247A1301C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{272C6012-A8B3-4293-8BD7-73247A1301C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{272C6012-A8B3-4293-8BD7-73247A1301C1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{02602CD2-9DE0-4B20-8449-535DF8B5CCAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{02602CD2-9DE0-4B20-8449-535DF8B5CCAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{02602CD2-9DE0-4B20-8449-535DF8B5CCAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -137,6 +143,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{272C6012-A8B3-4293-8BD7-73247A1301C1} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{02602CD2-9DE0-4B20-8449-535DF8B5CCAA} = {AF8D6B31-7D21-4A98-A781-73A0CCBB578F}
 		{D0FBCE29-7B0F-41B8-8C5C-DDE068A5117A} = {AF8D6B31-7D21-4A98-A781-73A0CCBB578F}
 		{3A2D1CF7-8F4D-4651-88E2-445CF5B1C2A9} = {AF8D6B31-7D21-4A98-A781-73A0CCBB578F}

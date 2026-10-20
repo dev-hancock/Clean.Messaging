@@ -15,7 +15,7 @@ Host developers need predictable public registration: compatible service choices
 
 ## Contract boundaries
 
-Overrides are registered before the relevant default registration and remain responsible for the substituted contract and lifetime. Explicit duplicate contracts/consumer identities are still rejected under CORE-002.
+Overrides are registered before the relevant default registration and remain responsible for the substituted contract and lifetime. Explicit duplicate contracts/consumer identities are still rejected under [CORE-002](../core-contracts/CORE-002-registry-uniqueness-and-selection.md); safe repetition of core defaults does not make explicit registrations idempotent.
 
 The callback failure type and exposed `Services` collection are public compatibility outcomes retained by the existing criteria. No particular guard helper, internal forwarding sequence, validation order or exception message is required. Registration does not establish database provisioning or successful startup.
 

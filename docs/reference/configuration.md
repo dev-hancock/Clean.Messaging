@@ -2,7 +2,7 @@
 
 ## Scope and baseline
 
-For host developers consulting registration boundaries, service lifetimes, validation, and configuration ownership. Source reviewed on 2026-10-13. This page describes composition contracts, not an executable setup walkthrough or proof of provider compatibility.
+For host developers consulting registration boundaries, service lifetimes, validation, and configuration ownership. This page describes composition contracts, not an executable setup walkthrough or proof of provider compatibility.
 
 ## Core registration
 

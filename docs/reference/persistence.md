@@ -1,10 +1,10 @@
 # EF Core persistence reference
 
-## Scope and evidence
+## Scope
 
 This page covers shared relational durable-entry storage and EF installation/capture contracts. Detailed capability behaviour is in [Inbox](inbox.md), [Outbox](outbox.md), [Domain events](domain-events.md), [Scheduling](scheduling.md) and [Sagas](sagas.md).
 
-Baseline: **13 October 2026 source review**. Relevant projects target .NET 10 and reference EF Core Relational 10.0.11. No build, tests, migrations or provider execution was performed. A relational-provider requirement is not a tested provider-support matrix. The application owns its context, provider, connection settings, migrations and database deployment.
+Relevant projects target .NET 10 and reference EF Core Relational 10.0.11. A relational-provider requirement is not a provider-support matrix. The [testing reference](testing.md#postgresql-persistence-integration) describes the PostgreSQL integration boundary; it does not certify all providers or failure scenarios. The application owns its context, provider, connection settings, migrations and database deployment.
 
 ## Composition and installation contracts
 

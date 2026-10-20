@@ -17,7 +17,7 @@ The existing single-type constraint applies to standard messaging composition in
 
 Matching context types does not by itself establish shared instances, transaction participation or atomicity, particularly for custom overrides or writes through unrelated contexts. The [persistence reference](../../reference/persistence.md) describes the current integration requirements.
 
-Supporting independently selected messaging contexts within one service collection would be a separate design and compatibility decision. The existing criteria remain unchanged; this document does not approve that extension.
+The single-type rule defines the supported standard composition contract, not a requirement that every future integration use one context type. Supporting independently selected messaging contexts within one service collection would require a separate design and compatibility decision; it is not part of this contract.
 
 ## Acceptance criteria
 

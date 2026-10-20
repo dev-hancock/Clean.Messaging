@@ -16,7 +16,7 @@ public sealed class OutboxIdentityTests
     [Arguments(true, false)]
     [Arguments(false, true)]
     [Arguments(true, true)]
-    public async Task Create_AmbientOrExplicitMetadata_PreservesOverridesAndImmediateCausation(
+    public async Task Enqueue_AmbientOrExplicitMetadata_StagesOverridesAndImmediateCausation(
         bool explicitCorrelation, bool explicitCausation)
     {
         using var provider = CreateServices().BuildServiceProvider();
@@ -30,8 +30,12 @@ public sealed class OutboxIdentityTests
         var targets = new Targets();
         var factory = new OutboxEntryFactory([targets], provider.GetRequiredService<IMessageSerializer>(), context, TimeProvider.System);
 
-        var batch = factory.Create(new OutboxMessage<Message>(Guid.NewGuid(), new Message("payload"),
+        var staged = new List<OutboxBatch>();
+        var outbox = new MessagingOutbox(factory, RecordStaging(staged));
+
+        outbox.Enqueue(new OutboxMessage<Message>(Guid.NewGuid(), new Message("payload"),
             overrideCorrelation, overrideCausation));
+        var batch = staged.Single();
 
         await Assert.That(batch.Entries.Count).IsEqualTo(2);
         foreach (var entry in batch.Entries)
@@ -43,13 +47,17 @@ public sealed class OutboxIdentityTests
 
     [Test]
     [Property("TestCaseId", "OUTBOX-002-AC-01")]
-    public async Task Create_NoAmbientMetadata_LeavesCorrelationAndCausationAbsent()
+    public async Task Enqueue_NoAmbientMetadata_StagesAbsentCorrelationAndCausation()
     {
         using var provider = CreateServices().BuildServiceProvider();
         var factory = new OutboxEntryFactory([new Targets()], provider.GetRequiredService<IMessageSerializer>(),
             new MessageContext(), TimeProvider.System);
 
-        var batch = factory.Create(new OutboxMessage<Message>(Guid.NewGuid(), new Message("payload")));
+        var staged = new List<OutboxBatch>();
+        var outbox = new MessagingOutbox(factory, RecordStaging(staged));
+
+        outbox.Enqueue(new OutboxMessage<Message>(Guid.NewGuid(), new Message("payload")));
+        var batch = staged.Single();
 
         await Assert.That(batch.Entries.Count).IsEqualTo(2);
         foreach (var entry in batch.Entries)
@@ -100,7 +108,7 @@ public sealed class OutboxIdentityTests
         using var provider = CreateServices().BuildServiceProvider();
         var serializer = provider.GetRequiredService<IMessageSerializer>();
         var now = new DateTimeOffset(2026, 1, 15, 12, 30, 0, TimeSpan.Zero);
-        var factory = new OutboxEntryFactory([new Targets()], serializer, new MessageContext(), new FixedClock(now));
+        var factory = new OutboxEntryFactory([new Targets()], serializer, new MessageContext(), new AdvancingClock(now));
         var staged = new List<OutboxBatch>();
         var outbox = new MessagingOutbox(factory, RecordStaging(staged));
         var message = new Message("payload");
@@ -114,6 +122,7 @@ public sealed class OutboxIdentityTests
             await Assert.That(entry.Message.Type).IsEqualTo("message.v1");
             await Assert.That(serializer.Deserialize(entry.Message)).IsEqualTo(message);
             await Assert.That(entry.CreatedAt).IsEqualTo(now.UtcDateTime);
+            await Assert.That(entry.CreatedAt.Kind).IsEqualTo(DateTimeKind.Utc);
         }
     }
 
@@ -125,22 +134,33 @@ public sealed class OutboxIdentityTests
         var context = new MessageContext();
         var correlationId = Guid.NewGuid();
         using var active = context.Push(Guid.NewGuid(), correlationId);
-        var factory = new OutboxEntryFactory([new Targets()], provider.GetRequiredService<IMessageSerializer>(),
-            context, TimeProvider.System);
+        var serializer = provider.GetRequiredService<IMessageSerializer>();
+        var factory = new OutboxEntryFactory([new Targets()], serializer, context, TimeProvider.System);
         var staged = new List<OutboxBatch>();
         var store = RecordStaging(staged);
         var outbox = new MessagingOutbox(factory, store);
         var firstEvent = Guid.NewGuid();
         var secondEvent = Guid.NewGuid();
+        var firstMessage = new Message("first");
+        var secondMessage = new Message("second");
 
-        outbox.Enqueue(new OutboxMessage<Message>(firstEvent, new Message("first")));
-        outbox.Enqueue(new OutboxMessage<Message>(secondEvent, new Message("second")));
+        outbox.Enqueue(new OutboxMessage<Message>(firstEvent, firstMessage));
+        outbox.Enqueue(new OutboxMessage<Message>(secondEvent, secondMessage));
 
         await Assert.That(staged.Select(x => x.EventId).ToArray()).IsEquivalentTo(new[] { firstEvent, secondEvent });
-        await Assert.That(staged.SelectMany(x => x.Entries).Count()).IsEqualTo(4);
-        foreach (var entry in staged.SelectMany(x => x.Entries))
+        await Assert.That(staged[0].MessageId).IsNotEqualTo(staged[1].MessageId);
+        foreach (var batch in staged)
         {
-            await Assert.That(entry.CorrelationId).IsEqualTo((Guid?)correlationId);
+            var expectedMessage = batch.EventId == firstEvent ? firstMessage : secondMessage;
+            await Assert.That(batch.Entries.Select(x => x.TargetId).ToArray())
+                .IsEquivalentTo(new[] { "first", "second" });
+            foreach (var entry in batch.Entries)
+            {
+                await Assert.That(entry.EventId).IsEqualTo(batch.EventId);
+                await Assert.That(entry.MessageId).IsEqualTo(batch.MessageId);
+                await Assert.That(entry.CorrelationId).IsEqualTo((Guid?)correlationId);
+                await Assert.That(serializer.Deserialize(entry.Message)).IsEqualTo(expectedMessage);
+            }
         }
     }
 
@@ -154,9 +174,16 @@ public sealed class OutboxIdentityTests
         return store;
     }
 
-    private sealed class FixedClock(DateTimeOffset now) : TimeProvider
+    private sealed class AdvancingClock(DateTimeOffset now) : TimeProvider
     {
-        public override DateTimeOffset GetUtcNow() => now;
+        private DateTimeOffset _current = now;
+
+        public override DateTimeOffset GetUtcNow()
+        {
+            var value = _current;
+            _current = _current.AddSeconds(1);
+            return value;
+        }
     }
 
     private sealed record Message(string Value);

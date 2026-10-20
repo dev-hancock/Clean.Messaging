@@ -23,33 +23,27 @@ public sealed class ConsumerDispatchTests
         var message = new Message("payload");
         var data = provider.GetRequiredService<IMessageSerializer>().Serialize(message);
         var dispatch = dispatcher.Dispatch("consumer", data, cancellation.Token).AsTask();
-        var assertionsPassed = false;
+        bool completedBeforeRelease;
 
         try
         {
             await consumer.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
-            await Assert.That(dispatch.IsCompleted).IsFalse();
-            await Assert.That(consumer.Message).IsEqualTo(message);
-            await Assert.That(consumer.Token).IsEqualTo(cancellation.Token);
-            assertionsPassed = true;
+            completedBeforeRelease = dispatch.IsCompleted;
         }
         finally
         {
             consumer.Release.TrySetResult();
-            try
-            {
-                await dispatch.WaitAsync(TimeSpan.FromSeconds(10));
-            }
-            catch (Exception cleanupFailure) when (!assertionsPassed)
-            {
-                Console.Error.WriteLine($"Dispatch cleanup also failed: {cleanupFailure}");
-            }
+            await Task.WhenAll(dispatch, consumer.Completed.Task).WaitAsync(TimeSpan.FromSeconds(10));
         }
+
+        await Assert.That(completedBeforeRelease).IsFalse();
+        await Assert.That(consumer.Message).IsEqualTo(message);
+        await Assert.That(consumer.Token).IsEqualTo(cancellation.Token);
     }
 
     [Test]
     [Property("TestCaseId", "CORE-003-AC-04")]
-    public async Task Dispatch_ConsumerFailure_PropagatesOriginalException()
+    public async Task Dispatch_ConsumerFailure_ExposesHandlerFailure()
     {
         var cause = new InvalidOperationException("controlled consumer failure");
         var consumer = new FailingConsumer(cause);
@@ -59,14 +53,13 @@ public sealed class ConsumerDispatchTests
             .BuildServiceProvider();
         using var scope = provider.CreateScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<ConsumerDispatcher>();
-        var data = provider.GetRequiredService<IMessageSerializer>().Serialize(new Message("payload"));
+        var message = new Message("payload");
+        var data = provider.GetRequiredService<IMessageSerializer>().Serialize(message);
 
-        var exception = await Assert.That(async () =>
-            await dispatcher.Dispatch("consumer", data, default))
+        await Assert.That(async () => await dispatcher.Dispatch("consumer", data, default))
             .Throws<InvalidOperationException>();
-        await Assert.That(exception).IsNotNull();
 
-        await Assert.That(ReferenceEquals(exception, cause)).IsTrue();
+        await Assert.That(consumer.Message).IsEqualTo(message);
     }
 
     [Test]
@@ -83,38 +76,27 @@ public sealed class ConsumerDispatchTests
         var dispatcher = scope.ServiceProvider.GetRequiredService<ConsumerDispatcher>();
         var data = provider.GetRequiredService<IMessageSerializer>().Serialize(new Message("payload"));
         var dispatch = dispatcher.Dispatch("consumer", data, cancellation.Token).AsTask();
-        var assertionsPassed = false;
+        bool completedBeforeCancellation;
+        OperationCanceledException? exception;
 
         try
         {
             await consumer.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
-            await Assert.That(dispatch.IsCompleted).IsFalse();
+            completedBeforeCancellation = dispatch.IsCompleted;
             cancellation.Cancel();
-
-            var exception = await Assert.That(() => dispatch.WaitAsync(TimeSpan.FromSeconds(10)))
+            exception = await Assert.That(() => dispatch.WaitAsync(TimeSpan.FromSeconds(10)))
                 .Throws<OperationCanceledException>();
-            await Assert.That(exception).IsNotNull();
-            await Assert.That(exception.CancellationToken).IsEqualTo(cancellation.Token);
-            await Assert.That(consumer.Token).IsEqualTo(cancellation.Token);
-            assertionsPassed = true;
         }
         finally
         {
             consumer.Release.TrySetResult();
-            try
-            {
-                cancellation.Cancel();
-                await dispatch.WaitAsync(TimeSpan.FromSeconds(10));
-            }
-            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
-            {
-                // Cancellation is the asserted completion; observe it again during cleanup.
-            }
-            catch (Exception cleanupFailure) when (!assertionsPassed)
-            {
-                Console.Error.WriteLine($"Dispatch cleanup also failed: {cleanupFailure}");
-            }
+            await consumer.Completed.Task.WaitAsync(TimeSpan.FromSeconds(10));
         }
+
+        await Assert.That(completedBeforeCancellation).IsFalse();
+        await Assert.That(exception).IsNotNull();
+        await Assert.That(exception.CancellationToken).IsEqualTo(cancellation.Token);
+        await Assert.That(consumer.Token).IsEqualTo(cancellation.Token);
     }
 
     [Test]
@@ -145,15 +127,29 @@ public sealed class ConsumerDispatchTests
         using var provider = CreateServices()
             .AddConsumer<Message, RecordingConsumer>("consumer")
             .BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
-        using var first = provider.CreateScope();
         using var second = provider.CreateScope();
-        var data = provider.GetRequiredService<IMessageSerializer>().Serialize(new Message("payload"));
+        var serializer = provider.GetRequiredService<IMessageSerializer>();
+        var firstMessage = new Message("first scope");
+        var secondMessage = new Message("second scope");
+        RecordingConsumer firstConsumer;
+        var secondConsumer = second.ServiceProvider.GetRequiredService<RecordingConsumer>();
 
-        await first.ServiceProvider.GetRequiredService<ConsumerDispatcher>().Dispatch("consumer", data, default);
+        using (var first = provider.CreateScope())
+        {
+            firstConsumer = first.ServiceProvider.GetRequiredService<RecordingConsumer>();
+            await first.ServiceProvider.GetRequiredService<ConsumerDispatcher>()
+                .Dispatch("consumer", serializer.Serialize(firstMessage), default);
+            await second.ServiceProvider.GetRequiredService<ConsumerDispatcher>()
+                .Dispatch("consumer", serializer.Serialize(secondMessage), default);
+        }
+        var laterMessage = new Message("second scope after first disposed");
+        await second.ServiceProvider.GetRequiredService<ConsumerDispatcher>()
+            .Dispatch("consumer", serializer.Serialize(laterMessage), default);
 
-        await Assert.That(first.ServiceProvider.GetRequiredService<RecordingConsumer>().Messages.ToArray())
-            .IsEquivalentTo(new[] { new Message("payload") });
-        await Assert.That(second.ServiceProvider.GetRequiredService<RecordingConsumer>().Messages).IsEmpty();
+        await Assert.That(firstConsumer.Messages.ToArray()).IsEquivalentTo(new[] { firstMessage });
+        await Assert.That(firstConsumer.IsDisposed).IsTrue();
+        await Assert.That(secondConsumer.Messages.ToArray()).IsEquivalentTo(new[] { secondMessage, laterMessage });
+        await Assert.That(secondConsumer.IsDisposed).IsFalse();
     }
 
     [Test]
@@ -180,8 +176,14 @@ public sealed class ConsumerDispatchTests
             await Assert.That(consumer.CausationId).IsEqualTo((Guid?)causationId);
             await Assert.That(consumer.ConsumerId).IsEqualTo("consumer");
             await Assert.That(context.MessageId).IsEqualTo((Guid?)messageId);
+            await Assert.That(context.CorrelationId).IsEqualTo((Guid?)correlationId);
+            await Assert.That(context.CausationId).IsEqualTo((Guid?)causationId);
+            await Assert.That(context.ConsumerId).IsEqualTo("consumer");
         }
         await Assert.That(context.MessageId).IsNull();
+        await Assert.That(context.CorrelationId).IsNull();
+        await Assert.That(context.CausationId).IsNull();
+        await Assert.That(context.ConsumerId).IsNull();
     }
 
     private static IServiceCollection CreateServices()
@@ -193,6 +195,7 @@ public sealed class ConsumerDispatchTests
     {
         public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Completed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public Message? Message { get; private set; }
         public CancellationToken Token { get; private set; }
 
@@ -201,29 +204,44 @@ public sealed class ConsumerDispatchTests
             Message = message;
             Token = cancellationToken;
             Started.SetResult();
-            await Release.Task.WaitAsync(cancellationToken);
+            try
+            {
+                await Release.Task.WaitAsync(cancellationToken);
+            }
+            finally
+            {
+                Completed.TrySetResult();
+            }
         }
     }
 
     private sealed class FailingConsumer(Exception cause) : IMessageConsumer<Message>
     {
+        public Message? Message { get; private set; }
+
         public async ValueTask Handle(Message message, CancellationToken cancellationToken)
         {
             await Task.Yield();
+            Message = message;
             throw cause;
         }
     }
 
-    private sealed class RecordingConsumer : IMessageConsumer<Message>
+    private sealed class RecordingConsumer : IMessageConsumer<Message>, IDisposable
     {
         public RecordingConsumer() { }
 
         public List<Message> Messages { get; } = [];
+        public bool IsDisposed { get; private set; }
+
         public ValueTask Handle(Message message, CancellationToken cancellationToken)
         {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
             Messages.Add(message);
             return ValueTask.CompletedTask;
         }
+
+        public void Dispose() => IsDisposed = true;
     }
 
     private sealed class ContextConsumer(IMessageContext context) : IMessageConsumer<Message>

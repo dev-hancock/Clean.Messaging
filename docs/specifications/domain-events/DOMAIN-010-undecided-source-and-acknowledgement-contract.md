@@ -12,9 +12,9 @@ Application authors implementing custom event sources need to know which facts c
 
 ## Contract boundaries
 
-The ordinary `AggregateRoot`, valid-source capture and local commit contracts remain specified in DOMAIN-001 through DOMAIN-009. This page identifies the unresolved extension policies; it does not select collision handling, payload-mutation rules, callback error handling or targetless acknowledgement.
+The ordinary `AggregateRoot`, valid-source capture and local commit contracts remain specified in [DOMAIN-001 through DOMAIN-009](README.md#specifications), with their own open decisions. This page identifies unresolved extension policies; it does not select collision handling, payload-mutation rules, callback error handling or targetless acknowledgement.
 
-Source mechanics and the current capture lifecycle belong in the [domain-events reference](../../reference/domain-events.md). Neither that implementation nor the recommendations below establish additional guarantees.
+Source mechanics and the current capture lifecycle belong in the [domain-events reference](../../reference/domain-events.md). Neither that implementation nor recommendations in the linked decisions establish additional guarantees.
 
 ## Acceptance criteria
 

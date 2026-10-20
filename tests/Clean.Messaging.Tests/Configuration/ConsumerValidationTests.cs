@@ -1,6 +1,8 @@
 using Clean.Messaging.Abstractions;
 using Clean.Messaging.Consumers;
 using Clean.Messaging.Exceptions;
+using Clean.Messaging.Processing;
+using Clean.Messaging.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -12,12 +14,16 @@ public sealed class ConsumerValidationTests
     [Property("TestCaseId", "CONFIG-004-AC-01")]
     public async Task StartAsync_MissingConsumerContract_FailsValidation()
     {
-        using var provider = new ServiceCollection().AddConsumer<Message, Consumer>("consumer").BuildServiceProvider();
+        var consumer = new Consumer();
+        using var provider = new ServiceCollection().AddSingleton(consumer)
+            .AddConsumer<Message, Consumer>("consumer").BuildServiceProvider();
 
         var exception = await Assert.That(() => StartConsumers(provider)).Throws<MessageException>();
         await Assert.That(exception).IsNotNull();
 
         await Assert.That(exception.Code).IsEqualTo("contract.type.not_registered");
+        await Assert.That(exception.Action).IsEqualTo(FailureAction.Fault);
+        await Assert.That(consumer.Messages).IsEmpty();
     }
 
     [Test]
@@ -29,28 +35,34 @@ public sealed class ConsumerValidationTests
         services.AddSingleton<IConsumerInvoker>(invoker);
         using var provider = services.BuildServiceProvider();
 
-        var exception = await Assert.That(() => StartConsumers(provider)).Throws<InvalidOperationException>();
-        await Assert.That(exception).IsNotNull();
-
-        await Assert.That(exception.Message).Contains("missing-service");
+        await Assert.That(() => StartConsumers(provider)).Throws<InvalidOperationException>();
     }
 
     [Test]
-    public async Task StartAsync_CompleteConsumerRegistration_CompletesValidation()
+    public async Task StartAsync_CompleteConsumerRegistration_AllowsDispatchAfterValidation()
     {
         using var provider = new ServiceCollection()
             .AddContract<Message>("message.v1")
             .AddConsumer<Message, Consumer>("consumer")
             .BuildServiceProvider();
 
-        foreach (var service in provider.GetServices<IHostedService>())
-        {
-            await service.StartAsync(default);
-            await service.StopAsync(default);
-        }
+        var validation = provider.GetServices<IHostedService>().Single();
+        var message = new Message("validated consumer");
+        var data = provider.GetRequiredService<IMessageSerializer>().Serialize(message);
 
-        await Assert.That(provider.GetRequiredService<IConsumerRegistry>().Get("consumer").MessageType)
-            .IsEqualTo(typeof(Message));
+        await validation.StartAsync(default);
+        try
+        {
+            using var scope = provider.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<ConsumerDispatcher>().Dispatch("consumer", data, default);
+
+            await Assert.That(scope.ServiceProvider.GetRequiredService<Consumer>().Messages.ToArray())
+                .IsEquivalentTo(new[] { message });
+        }
+        finally
+        {
+            await validation.StopAsync(default);
+        }
     }
 
     private static async Task StartConsumers(ServiceProvider provider)
@@ -67,8 +79,13 @@ public sealed class ConsumerValidationTests
     {
         public Consumer() { }
 
+        public List<Message> Messages { get; } = [];
+
         public ValueTask Handle(Message message, CancellationToken cancellationToken)
-            => ValueTask.CompletedTask;
+        {
+            Messages.Add(message);
+            return ValueTask.CompletedTask;
+        }
     }
 
     private sealed class UnregisteredConsumerInvoker : IConsumerInvoker

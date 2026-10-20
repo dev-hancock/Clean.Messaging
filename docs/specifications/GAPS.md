@@ -1195,8 +1195,6 @@ Inspection-only: Zero keys lead to unknown. Verification checks retained outbox 
 
 **Proposed identifier disposition:** Reserve callback-key composite OUTBOX-006-AC-02 and OUTBOX-010-AC-02/03/04 without narrowing. Keep per-context capture isolation, commit-before-acknowledgement and durable recoverability guarantees. Restore originals only on explicit approval, otherwise split under new IDs.
 
-Reserve original composite/error-handling IDs in full. Keep irreversible committed-state boundaries as guarantees; any isolated-callback outcome needs an explicit identity migration.
-
 **Implementation comparison:** Callbacks deduplicate only by event ID, and `PendingCommit.IsEmpty` ignores callback-only work. `OutboxTracker.Commit` invokes synchronous callbacks before wake/removal without isolating their errors. A throw can interrupt later callbacks, wake and cleanup; transaction-failure reconciliation can swallow the callback error and mark tracker state unknown. These observations do not resolve the policy.
 
 **Original assertions retained for decision, not approved requirements:**

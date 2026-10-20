@@ -19,7 +19,7 @@ Source-reviewed contracts and current behaviour, with conditional guarantees and
 | [Transport and MQTT](reference/transport.md) | What are the mapping, route, metadata, connection and acknowledgement contracts? |
 | [Scheduling](reference/scheduling.md) | How are durable schedules stored, executed, cancelled and integrated with outbox/Quartz? |
 | [Sagas](reference/sagas.md) | How do definitions, handlers, state, timers, effects and concurrency work? |
-| [Automated testing](reference/testing.md) | Which test project, dependencies, runner commands and isolation boundaries are supported? |
+| [Automated testing](reference/testing.md) | Which core/PostgreSQL test projects, dependencies, runner commands and isolation boundaries are supported? |
 
 ## Explanation
 

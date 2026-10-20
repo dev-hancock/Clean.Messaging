@@ -18,11 +18,11 @@ The [Inbox reference](../../reference/inbox.md) describes the current persistenc
 
 ## Acceptance criteria
 
-No resolved acceptance criteria are assigned on this page. The original identifiers remain reserved under Open decisions.
+The existing criterion is reserved under Open decisions, not an approved reconciliation rule. Required failure transparency is specified separately in INBOX-013.
 
 ## Open decisions
 
-The following original acceptance identifiers remain reserved; current behavior and unapproved recommendations do not establish normative authority.
+[GAP-DUR-003](../GAPS.md#gap-dur-003) owns the reconciliation, result-attribution and continuation decisions. A suspected violation of required failure transparency is distinct from those policy choices.
 
 ### INBOX-015-AC-01 — Proposal reconcile only confirmed duplicate outcomes
 

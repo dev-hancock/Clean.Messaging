@@ -52,7 +52,7 @@ public sealed class ContractRegistrationTests
     [Property("TestCaseId", "CORE-002-AC-01")]
     [Arguments("message.v1")]
     [Arguments("another.v1")]
-    public async Task GetContract_RepeatedMessageType_RejectsAmbiguousRegistry(string secondName)
+    public async Task ResolveRegistry_RepeatedMessageType_RejectsAmbiguousRegistry(string secondName)
     {
         var services = new ServiceCollection()
             .AddContract<Message>("message.v1")
@@ -65,7 +65,7 @@ public sealed class ContractRegistrationTests
 
     [Test]
     [Property("TestCaseId", "CORE-002-AC-01")]
-    public async Task GetType_RepeatedContractName_RejectsAmbiguousRegistry()
+    public async Task ResolveRegistry_RepeatedContractName_RejectsAmbiguousRegistry()
     {
         var services = new ServiceCollection()
             .AddContract<Message>("message.v1")

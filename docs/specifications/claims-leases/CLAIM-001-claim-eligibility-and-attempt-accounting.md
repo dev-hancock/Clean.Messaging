@@ -13,7 +13,7 @@ Workers need temporary authority to process unfinished durable targets without r
 - Acquisition MUST respect the caller's positive batch limit. It MUST NOT return more owned targets than requested; it need not fill the batch.
 - Ownership and recovery MUST preserve logical message and target identity. A lease does not grant authority to overwrite another owner's settlement or make external effects atomic.
 
-Attempt accounting, budget exhaustion and exact deadline equality are separate policy choices. They do not follow from acquiring ownership or from a particular storage algorithm.
+These ownership guarantees do not select attempt accounting, budget exhaustion or exact deadline equality. Those policies require the decisions linked below; they do not follow from a particular storage algorithm.
 
 ## Contract boundaries
 

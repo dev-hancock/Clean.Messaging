@@ -14,6 +14,8 @@ Applications need explicit durable-admission, replay and retention policy decisi
 
 Admission, local consumer completion and management replay are distinct contracts. Incoming adapters, consumer hosts and operators must not infer one boundary's result from another. In particular, representing a targetless envelope does not establish a policy for accepting it.
 
+Stable envelopes and retained duplicate protection are specified in [INBOX-001](INBOX-001-typed-admission-and-envelope-identity.md) and [INBOX-002](INBOX-002-independent-atomic-admission-and-duplicate-retention.md); local completion in [INBOX-005](INBOX-005-atomic-local-delivery-and-repeatable-execution.md); replay failure transparency in [INBOX-013](INBOX-013-replay-failure-transparency-requirement.md). Those contracts retain their own boundaries and open decisions.
+
 This page collects unresolved consumer-facing decisions, not a new admission or replay algorithm. Current behavior is described in the [Inbox reference](../../reference/inbox.md); it does not approve the policy alternatives below.
 
 ## Acceptance criteria

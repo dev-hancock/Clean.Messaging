@@ -52,7 +52,7 @@ public sealed class ConsumerRegistrationTests
     [Property("TestCaseId", "CORE-002-AC-02")]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Get_RepeatedConsumerIdentity_RejectsRegistryAcrossMessageTypes(bool differentType)
+    public async Task ResolveRegistry_RepeatedConsumerIdentity_RejectsRegistryAcrossMessageTypes(bool differentType)
     {
         var services = new ServiceCollection().AddConsumer<Message, Consumer>("consumer");
         if (differentType)
@@ -70,7 +70,7 @@ public sealed class ConsumerRegistrationTests
     }
 
     [Test]
-    [Property("TestCaseId", "CORE-002-AC-03")]
+    [Property("TestCaseId", "CORE-002-AC-05")]
     public async Task Get_ExactMessageType_ReturnsOnlyMatchingConsumers()
     {
         using var provider = new ServiceCollection()
@@ -126,17 +126,19 @@ public sealed class ConsumerRegistrationTests
         using var provider = new ServiceCollection()
             .AddConsumer<Message, Consumer>("consumer")
             .AddConsumer<Message, Consumer>("Consumer")
+            .AddConsumer<DerivedMessage, DerivedConsumer>("derived")
             .BuildServiceProvider();
         var registry = provider.GetRequiredService<IConsumerRegistry>();
 
         await Assert.That(registry.Get(typeof(Message)).Select(x => x.ConsumerId).ToArray())
             .IsEquivalentTo(new[] { "consumer", "Consumer" });
+        await Assert.That(registry.Get(typeof(DerivedMessage)).Select(x => x.ConsumerId).ToArray())
+            .IsEquivalentTo(new[] { "derived" });
         await Assert.That(registry.All.Select(x => x.ConsumerId).ToArray())
-            .IsEquivalentTo(new[] { "consumer", "Consumer" });
+            .IsEquivalentTo(new[] { "consumer", "Consumer", "derived" });
     }
 
     [Test]
-    [Property("TestCaseId", "CORE-003-AC-02")]
     public async Task Get_UnregisteredConsumerId_ReportsPermanentResolutionFailure()
     {
         using var provider = new ServiceCollection().AddMessaging().BuildServiceProvider();
@@ -193,8 +195,13 @@ public sealed class ConsumerRegistrationTests
         using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
 
-        await Assert.That(ReferenceEquals(scope.ServiceProvider.GetRequiredService<Consumer>(), consumer)).IsTrue();
+        var message = new Message("host-provided consumer");
+        await provider.GetRequiredService<IConsumerRegistry>().Get("consumer")
+            .Invoke(scope.ServiceProvider, message, default);
+
+        await Assert.That(scope.ServiceProvider.GetRequiredService<Consumer>()).IsSameReferenceAs(consumer);
         await Assert.That(provider.GetServices<Consumer>().Count()).IsEqualTo(1);
+        await Assert.That(consumer.Messages.ToArray()).IsEquivalentTo(new[] { message });
     }
 
     private record Message(string Value);

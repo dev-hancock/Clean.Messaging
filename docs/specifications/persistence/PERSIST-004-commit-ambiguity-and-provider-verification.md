@@ -13,7 +13,7 @@ Callers need to distinguish established commit outcomes from uncertainty so reco
 
 ## Contract boundaries
 
-The host supplies the relational provider and schema and owns reconciliation after uncertainty. Atomicity and retained identity requirements in PERSIST-001/PERSIST-002 remain binding within their stated boundaries.
+The host supplies the relational provider and schema and owns reconciliation after uncertainty. Retained identity in [PERSIST-001](PERSIST-001-retained-logical-target-uniqueness.md) and local completion atomicity in [PERSIST-002](PERSIST-002-local-completion-atomicity.md) remain binding within their stated boundaries. An unresolved provider-support policy does not suspend those requirements.
 
 Outcome evidence must concern the intended operation: observing a compatible stored state is not automatically proof that a particular racing attempt committed. The adequacy of that evidence and the supported provider/concurrency envelope remain unresolved; no new verification protocol is selected here.
 
